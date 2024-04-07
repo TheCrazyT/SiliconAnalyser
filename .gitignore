@@ -1,0 +1,8 @@
+.vscode
+*.h5
+*.pyc
+*.json
+*.zip
+*.code-workspace
+bak
+samples
