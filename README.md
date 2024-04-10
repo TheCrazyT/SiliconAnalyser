@@ -5,6 +5,7 @@
 # Information
 
 Code will use your graphic card for acceleration.
+
 Frameworks/Libraries used:
 * [PyQt5](https://www.riverbankcomputing.com/software/pyqt/)
 * [PyTorch](https://pytorch.org/)
@@ -19,11 +20,11 @@ Frameworks/Libraries used:
 * press mouse down on image and drag your rectangle for your grid
 * adjust x,y,cols,rows,width,height manualy to fit
 * add label (while grid is selected)
-** give it a random name
+  * give it a random name
 * with that label selected, select cells for that label (for example cells that mark a "1")
 * select grid (for example "grid_0" again)
 * add another label (while grid is selected)
-** give it a random name
+  * give it a random name
 * with that label selected, select cells for that label (for example cells that mark a "0")
 * with enough "1" and "0" labels drawn, click the "Compute" button
   * ai will find images in the grid that have the same properties
@@ -39,7 +40,7 @@ Frameworks/Libraries used:
 
 ![image](docs/small_tutorial.gif)
 
-#TODO
+# TODO
 
 * export of ai-cells as csv or bit-image
 * auto-compute to calculate in background while you are selecting new cells for your labels
