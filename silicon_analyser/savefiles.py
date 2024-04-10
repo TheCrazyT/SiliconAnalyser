@@ -1,6 +1,6 @@
 import json
 from json import JSONDecoder, JSONEncoder
-from grid import Grid
+from silicon_analyser.grid import Grid
 
 SAVE_RECTS = "rects.json"
 SAVE_GRIDS = "grids.json"

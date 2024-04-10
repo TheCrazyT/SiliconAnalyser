@@ -1,8 +1,8 @@
 from PyQt5.QtGui import QStandardItem
 from PyQt5.QtWidgets import QTreeView
 
-from grid import Grid
-from treeitem import TreeItem
+from silicon_analyser.grid import Grid
+from silicon_analyser.treeitem import TreeItem
 
 class AbstractTreeHelper(QTreeView):
     def selectedType(self) -> str:

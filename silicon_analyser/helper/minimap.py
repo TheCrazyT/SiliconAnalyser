@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QLabel
-from helper.abstract.abstractmywindow import AbstractMyWindow
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QPixmap, QPainter, QPen, QMouseEvent
+from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
 
 class MiniMap(QLabel):
     def __init__(self, parent):

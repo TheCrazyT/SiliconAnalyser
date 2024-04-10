@@ -1,9 +1,16 @@
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtGui import QStandardItem
-from helper.abstract.abstractimage import AbstractImage
-from helper.abstract.abstracttreehelper import AbstractTreeHelper
+from PyQt5.QtWidgets import QAction
+
+from silicon_analyser.helper.abstract.abstractimage import AbstractImage
+from silicon_analyser.helper.abstract.abstracttreehelper import AbstractTreeHelper
 
 class AbstractMyWindow(QMainWindow):
+    _actionGridAddRowTop: QAction
+    _actionSaveModel: QAction
+    _actionLoadModel: QAction
+    _actionRemoveGrid: QAction
+    _actionRemoveLabel: QAction
     autosave: bool
     def __init__(self):
         QMainWindow.__init__(self)

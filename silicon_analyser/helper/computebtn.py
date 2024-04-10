@@ -1,15 +1,15 @@
 from sklearn.model_selection import train_test_split
-from dialogs.compute_stats import ComputeStatsDlg
 import os
 from PyQt5.QtWidgets import QPushButton
-from helper.abstract.abstractmywindow import AbstractMyWindow
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from PyQt5.QtGui import QMouseEvent
 import random
 import numpy as np
 import sys
-from grid import Grid
-from treeitem import TreeItem
+from silicon_analyser.dialogs.compute_stats import ComputeStatsDlg
+from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
+from silicon_analyser.grid import Grid
+from silicon_analyser.treeitem import TreeItem
 
 # because debugging in multithread can cause problems (breakpoints don't work)
 # I added this method ...
@@ -136,58 +136,62 @@ class Worker(QObject):
                     self.count = 0
         
         print("_worker runs")
-        self._computeStatsDlg.reset()
-        selectedType = self._myWindow.getTree().selectedType()
-        gridMode = (selectedType == TreeItem.TYPE_GRID) or (selectedType == TreeItem.TYPE_GRID_ITEM) or (selectedType == TreeItem.TYPE_AI_GRID) or (selectedType == TreeItem.TYPE_AI_GRID_ITEM)
-        rects = self._myWindow.getImage().getRects()
-        ignoreRects = self._myWindow.getImage().getAIIgnoreRects()
-        self._myWindow.setStatusText("training in progress")
+        try:
+            self._computeStatsDlg.reset()
+            selectedType = self._myWindow.getTree().selectedType()
+            gridMode = (selectedType == TreeItem.TYPE_GRID) or (selectedType == TreeItem.TYPE_GRID_ITEM) or (selectedType == TreeItem.TYPE_AI_GRID) or (selectedType == TreeItem.TYPE_AI_GRID_ITEM)
+            rects = self._myWindow.getImage().getRects()
+            ignoreRects = self._myWindow.getImage().getAIIgnoreRects()
+            self._myWindow.setStatusText("training in progress")
 
-        grid = None        
-        if gridMode:
-            grid: Grid = self._myWindow.getTree().getSelectedGrid()
-            maxW, maxH, labels, countGroups, MP, train, vals = self.initTrainAndValsForGrid(grid)
-        else:
-            maxW, maxH, countGroups, MP, train, vals = self.initTrainAndValsForRects(rects, ignoreRects)
+            grid = None        
+            if gridMode:
+                grid: Grid = self._myWindow.getTree().getSelectedGrid()
+                maxW, maxH, labels, countGroups, MP, train, vals = self.initTrainAndValsForGrid(grid)
+            else:
+                maxW, maxH, countGroups, MP, train, vals = self.initTrainAndValsForRects(rects, ignoreRects)
 
-        model_conv, model_train = self.createModels(keras, countGroups, maxW, maxH, MP)
-        
-        if gridMode:
-            aiGrid = self.prepareGridData(grid, labels, countGroups, maxW, maxH, train, vals)
-        else:
-            self.prepareRectData(rects, countGroups, ignoreRects, maxW, maxH, train, vals)
-        
-        callbacks = [MyPlottingCallback(self._computeStatsDlg),MyThresholdCallback(0.99,200)]
-        model_train.compile(optimizer=keras.optimizers.Adam(learning_rate=0.002),loss="binary_crossentropy",metrics=["accuracy"])
-        print("before fit")
-        print("vals",vals)
-        print("train.shape",train.shape)
-        print("vals.shape",vals.shape)
-        
-        xtraining, ytraining, xvalidation, yvalidation = train_test_split(train,vals,test_size=0.1) 
+            model_conv, model_train = self.createModels(keras, countGroups, maxW, maxH, MP)
+            
+            if gridMode:
+                aiGrid = self.prepareGridData(grid, labels, countGroups, maxW, maxH, train, vals)
+            else:
+                self.prepareRectData(rects, countGroups, ignoreRects, maxW, maxH, train, vals)
+            
+            callbacks = [MyPlottingCallback(self._computeStatsDlg),MyThresholdCallback(0.99,200)]
+            model_train.compile(optimizer=keras.optimizers.Adam(learning_rate=0.002),loss="binary_crossentropy",metrics=["accuracy"])
+            print("before fit")
+            print("vals",vals)
+            print("train.shape",train.shape)
+            print("vals.shape",vals.shape)
+            
+            xtraining, ytraining, xvalidation, yvalidation = train_test_split(train,vals,test_size=0.1) 
 
-        history = model_train.fit(
-            x = xtraining,
-            y = xvalidation,
-            epochs = 100000,
-            verbose = 0,
-            validation_data=(ytraining,yvalidation),
-            shuffle = True,
-            batch_size = 512,
-            callbacks = callbacks
-        )
-        
-        print("after fit")
-        self._myWindow.setStatusText("Accuracy: %s" % history.history["accuracy"][-1])
-        
-        if gridMode:
-            appendFoundCellRects(self, grid, aiGrid, list(labels), maxW, maxH, model_train)
-        else:
-            appendFoundRects(self, list(rects.keys()), maxW, maxH, model_conv, MP)
-        
-        self._myWindow.getImage().drawImage()
-        self._myWindow.setLastModel(aiGrid.name, model_train)
-        self.finished.emit()
+            history = model_train.fit(
+                x = xtraining,
+                y = xvalidation,
+                epochs = 100000,
+                verbose = 0,
+                validation_data=(ytraining,yvalidation),
+                shuffle = True,
+                batch_size = 512,
+                callbacks = callbacks
+            )
+            
+            print("after fit")
+            self._myWindow.setStatusText("Accuracy: %s" % history.history["accuracy"][-1])
+            
+            if gridMode:
+                appendFoundCellRects(self, grid, aiGrid, list(labels), maxW, maxH, model_train)
+            else:
+                appendFoundRects(self, list(rects.keys()), maxW, maxH, model_conv, MP)
+            
+            self._myWindow.getImage().drawImage()
+            self._myWindow.setLastModel(aiGrid.name, model_train)
+        except Exception as e:
+            self._computeStatsDlg.setError(e)
+        finally:
+            self.finished.emit()
         
     def getAllCellRects(self, grid: Grid):
         cellRects = []

@@ -30,6 +30,10 @@ class Grid:
     def getLabels(self) -> list[str]:
         return self._rects.keys()
     
+    def removeRectGroup(self, label):
+        del self._rects[label]
+        del self._rectsActive[label]
+    
     def addRectGroup(self, text):
         self._rects[text] = []
         self.rectActive(text)

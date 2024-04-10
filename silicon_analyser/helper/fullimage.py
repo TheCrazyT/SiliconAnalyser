@@ -1,18 +1,21 @@
-from savefiles import saveGrids,saveRects
 from PyQt5.QtCore import Qt, QRect, QSize
 from PyQt5.QtWidgets import QLabel, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap, QColor, QMouseEvent, QPainter, QPen, QBrush
-from helper.abstract.abstractmywindow import AbstractMyWindow
 import numpy as np
-from grid import Grid
-from rect import Rect
-from treeitem import TreeItem
+from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
+from silicon_analyser.savefiles import saveGrids,saveRects
+from silicon_analyser.grid import Grid
+from silicon_analyser.rect import Rect
+from silicon_analyser.treeitem import TreeItem
 
 class FullImage(QLabel):
     _rects: dict[Rect]
     _aiRects: dict[Rect]
-    _rectActive: dict[Rect]
+    _rectActive: dict[bool]
     _grids: dict[Grid]
+    _aiGrids: dict[Grid]
+    _gridsActive: dict[bool]
+    _aiGridsActive: dict[bool]
     def __init__(self, parent):
         QLabel.__init__(self, parent)
         self._drawRectStart = False
@@ -134,6 +137,18 @@ class FullImage(QLabel):
         if event.button() == Qt.RightButton:
             print("right click")
             self.removeRectAt(event.x(),event.y())
+            
+    def removeRectGroup(self, label):
+        del self._rects[label]
+        del self._aiRects[label]
+        del self._rectActive[label]
+        del self._aiRectActive[label]
+        
+    def removeGrid(self, label):
+        del self._grids[label]
+        del self._aiGrids[label]
+        del self._gridsActive[label]
+        del self._aiGridsActive[label]
 
     def removeRectAt(self, evx, evy):
         scale = self._myWindow.getScale()
@@ -177,7 +192,7 @@ class FullImage(QLabel):
                         y,ey = ey,y
                     if x<evx and y<evy and ex>evx and ey>evy:
                         toRemove.append(i)
-            for i in  sorted(toRemove, reverse=True):
+            for i in sorted(toRemove, reverse=True):
                 print(f"remove {i}")
                 self._aiIgnoreRects.append(self._aiRects[k][i])
                 del self._aiRects[k][i]
@@ -286,10 +301,10 @@ class FullImage(QLabel):
         cellHeight = grid.height / grid.rows
         
         startCol = -(grid.x - posX)//cellWidth
-        startCol = int(max(1, startCol))
+        startCol = int(max(0, startCol))
         
         startRow = -(grid.y - posY)//cellHeight
-        startRow = int(max(1, startRow))
+        startRow = int(max(0, startRow))
         
         endCol = int((grid.x + grid.width - posX)//cellWidth)
         endRow = int((grid.y + grid.height - posY)//cellHeight)

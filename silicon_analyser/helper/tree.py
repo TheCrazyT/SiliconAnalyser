@@ -1,15 +1,20 @@
-from helper.abstract.abstractmywindow import AbstractMyWindow
-from grid import Grid
-from helper.abstract.abstracttreehelper import AbstractTreeHelper
-from treeitem import TreeItem
 from PyQt5.QtCore import QItemSelection
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QTreeView, QWidget, QAction, QFileDialog
 from PyQt5.QtGui import QStandardItem
-from grid import Grid
+from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
+from silicon_analyser.grid import Grid
+from silicon_analyser.helper.abstract.abstracttreehelper import AbstractTreeHelper
+from silicon_analyser.treeitem import TreeItem
+from silicon_analyser.grid import Grid
 
 class Tree(AbstractTreeHelper):
     _myWindow: AbstractMyWindow
+    _actionGridAddRowTop: QAction
+    _actionSaveModel: QAction
+    _actionLoadModel: QAction
+    _actionRemoveGrid: QAction
+    _actionRemoveLabel: QAction
 
     def __init__(self, parent: QWidget | None = ...) -> None:
         super().__init__(parent)
@@ -17,15 +22,21 @@ class Tree(AbstractTreeHelper):
     def initialize(self, myWindow: AbstractMyWindow):
         self._myWindow = myWindow
         self.selectionModel().selectionChanged.connect(self.treeSelectionChanged)
-        self._actionGridAddRowTop: QAction = self._myWindow._actionGridAddRowTop
-        self._actionSaveModel: QAction = self._myWindow._actionSaveModel
-        self._actionLoadModel: QAction = self._myWindow._actionLoadModel
+        self._actionGridAddRowTop = self._myWindow._actionGridAddRowTop
+        self._actionSaveModel = self._myWindow._actionSaveModel
+        self._actionLoadModel = self._myWindow._actionLoadModel
+        self._actionRemoveGrid = self._myWindow._actionRemoveGrid
+        self._actionRemoveLabel = self._myWindow._actionRemoveLabel
         self.addAction(self._actionGridAddRowTop)
         self.addAction(self._actionSaveModel)
         self.addAction(self._actionLoadModel)
+        self.addAction(self._actionRemoveGrid)
+        self.addAction(self._actionRemoveLabel)
         self._actionGridAddRowTop.triggered.connect(self.addTopRow)
         self._actionSaveModel.triggered.connect(self.saveModel)
         self._actionLoadModel.triggered.connect(self.loadModel)
+        self._actionRemoveGrid.triggered.connect(self.removeGrid)
+        self._actionRemoveLabel.triggered.connect(self.removeLabel)
     
     def saveModel(self, *args, **kwargs):
         print("saveModel")
@@ -41,6 +52,7 @@ class Tree(AbstractTreeHelper):
     
     def loadModel(self, *args, **kwargs):
         print("loadModel")
+        myWindow: AbstractMyWindow = self._myWindow
         dlg = QFileDialog()
         dlg.setFileMode(QFileDialog.ExistingFile)
         dlg.setNameFilter("Trained model (*.h5)")
@@ -49,8 +61,37 @@ class Tree(AbstractTreeHelper):
             filenames = dlg.selectedFiles()
         if(len(filenames) == 1):
             from keras.models import load_model
-            self._myWindow.setLastModel(load_model(filenames[0]))
+            myWindow.setLastModel(load_model(filenames[0]))
     
+    def removeGrid(self, *args, **kwargs):
+        print("removeGrid")
+        myWindow: AbstractMyWindow = self._myWindow
+        grid: Grid = self.getSelectedGrid()
+        myWindow.getImage().removeGrid(grid.name)
+        myWindow.getImage().drawImage()
+        self.removeSelectedRow()
+
+    def removeSelectedRow(self):
+        index_list: list[QtCore.QModelIndex] = []                                                          
+        for model_index in self.selectionModel().selectedRows():       
+            index = QtCore.QPersistentModelIndex(model_index)         
+            index_list.append(index)                                             
+
+        for index in index_list:                                      
+            self.model().removeRow(index.row(),index.parent())
+
+    def removeLabel(self, *args, **kwargs):
+        print("removeLabel")
+        myWindow: AbstractMyWindow = self._myWindow
+        label = self.selectedLabel()
+        if(self.selectedType() == TreeItem.TYPE_GRID_ITEM):
+            grid: Grid = self.getSelectedGrid()
+            grid.removeRectGroup(label)
+        elif(self.selectedType() == TreeItem.TYPE_MANUAL):
+            myWindow.getImage().removeRectGroup(label)
+        myWindow.getImage().drawImage()
+        self.removeSelectedRow()
+
     def addTopRow(self, *args, **kwargs):
         print("addTopRow")
         grid: Grid = self.getSelectedGrid()
@@ -58,30 +99,46 @@ class Tree(AbstractTreeHelper):
         
     def treeSelectionChanged(self, selection: QItemSelection):
         print("treeSelectionChanged")
-        self._myWindow.reloadPropertyWindow(selection)
-        tree = self._myWindow.getTree()
+        myWindow: AbstractMyWindow = self._myWindow
+        myWindow.reloadPropertyWindow(selection)
+        tree = self
         selectedType = tree.selectedType()
         if((selectedType == TreeItem.TYPE_GRID_ITEM) or (selectedType == TreeItem.TYPE_GRID)):
             self._actionGridAddRowTop.setVisible(True)
             grid: Grid = self.getSelectedGrid()
-            if self._myWindow.hasModel(grid.name):
+            if myWindow.hasModel(grid.name):
                 self._actionSaveModel.setVisible(True)
             self._actionLoadModel.setVisible(True)
         else:
             self._actionGridAddRowTop.setVisible(False)
             self._actionSaveModel.setVisible(False)
             self._actionLoadModel.setVisible(False)
+        if(selectedType == TreeItem.TYPE_GRID):
+            self._actionRemoveGrid.setVisible(True)
+        else:
+            self._actionRemoveGrid.setVisible(False)
+        if(selectedType == TreeItem.TYPE_MANUAL):
+            self._actionRemoveLabel.setVisible(True)
+        else:
+            self._actionRemoveLabel.setVisible(False)
         if(selectedType == TreeItem.TYPE_GRID_ITEM):
-            self._myWindow.getImage().drawImage()
+            self._actionRemoveLabel.setVisible(True)
+        else:
+            self._actionRemoveLabel.setVisible(False)
+        if(selectedType == TreeItem.TYPE_GRID_ITEM):
+            myWindow.getImage().drawImage()
         if(selectedType == TreeItem.TYPE_AI_GRID_ITEM):
-            self._myWindow.getImage().drawImage()
+            myWindow.getImage().drawImage()
             
     def addTreeItem(self, text, type="auto", parent_obj=None, parent_item=None) -> tuple[Grid, TreeItem]:
         obj = None
-        img = self._myWindow.getImage()
-        tree = self._myWindow.getTree()
+        myWindow: AbstractMyWindow = self._myWindow
+        img = myWindow.getImage()
+        tree: Tree = self
         if type == "auto":
             if tree.selectedType() == TreeItem.TYPE_GRID:
+                type = TreeItem.TYPE_GRID_ITEM
+            elif tree.selectedType() == TreeItem.TYPE_GRID_ITEM:
                 type = TreeItem.TYPE_GRID_ITEM
             else:
                 type = TreeItem.TYPE_MANUAL
@@ -111,17 +168,17 @@ class Tree(AbstractTreeHelper):
             img.activateAIRectGroup(text)
         item: TreeItem = TreeItem(text, type, obj)
         if type == TreeItem.TYPE_MANUAL:
-            treeItem: QStandardItem = self._myWindow.getManualItem()
+            treeItem: QStandardItem = myWindow.getManualItem()
         if type == TreeItem.TYPE_AI:
-            treeItem: QStandardItem = self._myWindow.getAIItem()
+            treeItem: QStandardItem = myWindow.getAIItem()
         if type == TreeItem.TYPE_GRID:
-            treeItem: QStandardItem = self._myWindow.getManualItem()
+            treeItem: QStandardItem = myWindow.getManualItem()
         if type == TreeItem.TYPE_AI_GRID:
-            treeItem: QStandardItem = self._myWindow.getAIItem()
+            treeItem: QStandardItem = myWindow.getAIItem()
         if type == TreeItem.TYPE_GRID_ITEM:
-            treeItem: QStandardItem = self.getSelectedGrid()
+            treeItem: QStandardItem = self.getSelectedItem().parent()
         if type == TreeItem.TYPE_AI_GRID_ITEM:
-            treeItem: QStandardItem = self.getSelectedAIGrid()
+            treeItem: QStandardItem = self.getSelectedItem().parent()
         if parent_item is not None:
             treeItem: QStandardItem = parent_item
         tree: QTreeView = self
@@ -154,18 +211,19 @@ class Tree(AbstractTreeHelper):
         return tree.model().itemFromIndex(sel)
     
     def getSelectedGrid(self):
+        myWindow: AbstractMyWindow = self._myWindow
         type = self.getSelectedItem().data(TreeItem.TYPE)
         if type == TreeItem.TYPE_GRID_ITEM:
             return self.getSelectedItem().parent().data(TreeItem.OBJECT)
         if type == TreeItem.TYPE_AI_GRID_ITEM:
             gridName = self.getSelectedItem().parent().data(TreeItem.TEXT)
-            manual: QStandardItem = self._myWindow.getManualItem()
+            manual: QStandardItem = myWindow.getManualItem()
             for r in range(0,manual.rowCount()):
                 if manual.child(r).data(TreeItem.TEXT) == gridName:
                     return manual.child(r).data(TreeItem.OBJECT)
         if type == TreeItem.TYPE_AI_GRID:
             gridName = self.getSelectedItem().data(TreeItem.TEXT)
-            manual: QStandardItem = self._myWindow.getManualItem()
+            manual: QStandardItem = myWindow.getManualItem()
             for r in range(0,manual.rowCount()):
                 if manual.child(r).data(TreeItem.TEXT) == gridName:
                     return manual.child(r).data(TreeItem.OBJECT)
@@ -186,11 +244,12 @@ class Tree(AbstractTreeHelper):
         return True
     
     def clearAIItem(self):
-        treeAIItem = self._myWindow.getAIItem()
+        myWindow: AbstractMyWindow = self._myWindow
+        treeAIItem = myWindow.getAIItem()
         if treeAIItem.hasChildren():
             treeAIItem.removeRows(0,treeAIItem.rowCount())
         treeAIItem.clearData()
-        self._myWindow.getImage().clearAIRects()
+        myWindow.getImage().clearAIRects()
     
     def selectedType(self) -> str:
         sel = self.getSelectedItem()
@@ -205,7 +264,8 @@ class Tree(AbstractTreeHelper):
         return sel.data(TreeItem.TEXT)
     
     def aiGridRectGroupChecked(self, treeItem: TreeItem, checked, text):
-        img = self._myWindow.getImage()
+        myWindow: AbstractMyWindow = self._myWindow
+        img = myWindow.getImage()
         grid = treeItem.parent().data(TreeItem.OBJECT)
         if checked:
             img.activateAIGridRectGroup(grid,text)
@@ -214,7 +274,8 @@ class Tree(AbstractTreeHelper):
         img.drawImage()
         
     def gridRectGroupChecked(self, treeItem: TreeItem, checked, text):
-        img = self._myWindow.getImage()
+        myWindow: AbstractMyWindow = self._myWindow
+        img = myWindow.getImage()
         grid = treeItem.parent().data(TreeItem.OBJECT)
         if checked:
             img.activateGridRectGroup(grid,text)
@@ -223,14 +284,16 @@ class Tree(AbstractTreeHelper):
         img.drawImage()
         
     def aiItemChecked(self, treeItem: TreeItem, checked, text):
-        img = self._myWindow.getImage()
+        myWindow: AbstractMyWindow = self._myWindow
+        img = myWindow.getImage()
         if checked:
             img.activateAIRectGroup(text)
         else:
             img.deactivateAIRectGroup(text)
     
     def itemChecked(self, treeItem: TreeItem, checked, text):
-        img = self._myWindow.getImage()
+        myWindow: AbstractMyWindow = self._myWindow
+        img = myWindow.getImage()
         if checked:
             img.activateRectGroup(text)
         else:

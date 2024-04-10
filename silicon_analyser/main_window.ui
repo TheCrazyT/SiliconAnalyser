@@ -133,6 +133,24 @@
    </layout>
   </widget>
   <widget class="QStatusBar" name="_statusBar"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>924</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuInfo">
+    <property name="title">
+     <string>Info</string>
+    </property>
+    <addaction name="_actionMade_by_TheCrazyT"/>
+    <addaction name="_actionUrl"/>
+   </widget>
+   <addaction name="menuInfo"/>
+  </widget>
   <action name="_actionGridAddRowTop">
    <property name="text">
     <string>Add row to top</string>
@@ -154,37 +172,63 @@
     <string>Load computation model</string>
    </property>
   </action>
+  <action name="_actionRemoveGrid">
+   <property name="text">
+    <string>Remove grid</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove grid</string>
+   </property>
+  </action>
+  <action name="_actionRemoveLabel">
+   <property name="text">
+    <string>Remove label</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove label</string>
+   </property>
+  </action>
+  <action name="_actionMade_by_TheCrazyT">
+   <property name="text">
+    <string>Made by TheCrazyT</string>
+   </property>
+  </action>
+  <action name="_actionUrl">
+   <property name="text">
+    <string>https://github.com/TheCrazyT/SiliconAnalyser</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
    <class>ComputeBtn</class>
    <extends>QPushButton</extends>
-   <header>helper.computebtn</header>
+   <header>silicon_analyser.helper.computebtn</header>
   </customwidget>
   <customwidget>
    <class>AddLabelBtn</class>
    <extends>QPushButton</extends>
-   <header>helper.addlabelbtn</header>
+   <header>silicon_analyser.helper.addlabelbtn</header>
   </customwidget>
   <customwidget>
    <class>AddGridBtn</class>
    <extends>QPushButton</extends>
-   <header>helper.addgridbtn</header>
+   <header>silicon_analyser.helper.addgridbtn</header>
   </customwidget>
   <customwidget>
    <class>MiniMap</class>
    <extends>QLabel</extends>
-   <header>helper.minimap</header>
+   <header>silicon_analyser.helper.minimap</header>
   </customwidget>
   <customwidget>
    <class>FullImage</class>
    <extends>QLabel</extends>
-   <header>helper.fullimage</header>
+   <header>silicon_analyser.helper.fullimage</header>
   </customwidget>
   <customwidget>
    <class>Tree</class>
    <extends>QTreeView</extends>
-   <header>helper.tree</header>
+   <header>silicon_analyser.helper.tree</header>
   </customwidget>
  </customwidgets>
  <resources/>

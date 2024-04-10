@@ -1,17 +1,18 @@
 from PyQt5.QtWidgets import QInputDialog, QPushButton
-from helper.abstract.abstractmywindow import AbstractMyWindow
 from PyQt5.QtGui import QMouseEvent
+from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
+from silicon_analyser.treeitem import TreeItem
 
-class AddLabelBtn(QPushButton):
+class AddGridBtn(QPushButton):
     def __init__(self, text: str):
         QPushButton.__init__(self, text)
         self.clicked.connect(self.buttonClicked)
+        self.gridIdx = 0
 
     def buttonClicked(self, event: QMouseEvent):
-        print("AddLabelBtn: buttonClicked")
-        text, ok = QInputDialog.getText(self, 'Label Input Dialog', 'Enter your label:')
-        if ok:
-            self._myWindow.getTree().addTreeItem(text)
-            
+        print("AddGridBtn: buttonClicked")
+        self._myWindow.getTree().addTreeItem("grid_%d" % self.gridIdx,TreeItem.TYPE_GRID)
+        self.gridIdx += 1
+    
     def initialize(self, myWindow: AbstractMyWindow):
         self._myWindow = myWindow

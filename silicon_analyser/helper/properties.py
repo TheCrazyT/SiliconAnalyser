@@ -1,10 +1,10 @@
-from savefiles import saveGrids
-from grid import Grid
 from PyQt5.QtWidgets import QTableView
 from PyQt5.QtCore import QItemSelection, QModelIndex, Qt
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from treeitem import TreeItem
-from helper.abstract.abstractmywindow import AbstractMyWindow
+from silicon_analyser.savefiles import saveGrids
+from silicon_analyser.grid import Grid
+from silicon_analyser.treeitem import TreeItem
+from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
 
 class PropertiesUtil:
     def __init__(self, myWindow: AbstractMyWindow,properties: QTableView):

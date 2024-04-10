@@ -1,26 +1,24 @@
-import json
-import savefiles
-from savefiles import loadGrids, loadRects
 from PyQt5 import QtCore, uic
 from PyQt5.QtCore import Qt, QItemSelection
-from PyQt5.QtWidgets import QTreeView, QTableView, QStatusBar
+from PyQt5.QtWidgets import QFileDialog, QTableView, QStatusBar, QAction
 from PyQt5.QtGui import QPixmap, QStandardItem, QStandardItemModel
-from helper.abstract.abstracttreehelper import AbstractTreeHelper
-from helper.abstract.abstractimage import AbstractImage
-from helper.abstract.abstractmywindow import AbstractMyWindow
-from helper.minimap import MiniMap
-from helper.fullimage import FullImage
-from helper.addlabelbtn import AddLabelBtn
-from helper.computebtn import ComputeBtn
-from helper.addgridbtn import AddGridBtn
-from treeitem import TreeItem
-from os import path
-from helper.properties import PropertiesUtil
-from grid import Grid
-from treeitem import TreeItem
-from helper.tree import Tree
+from os import path as p
 import sys
-
+import silicon_analyser.savefiles
+from silicon_analyser.savefiles import loadGrids, loadRects
+from silicon_analyser.helper.abstract.abstracttreehelper import AbstractTreeHelper
+from silicon_analyser.helper.abstract.abstractimage import AbstractImage
+from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
+from silicon_analyser.helper.minimap import MiniMap
+from silicon_analyser.helper.fullimage import FullImage
+from silicon_analyser.helper.addlabelbtn import AddLabelBtn
+from silicon_analyser.helper.computebtn import ComputeBtn
+from silicon_analyser.helper.addgridbtn import AddGridBtn
+from silicon_analyser.treeitem import TreeItem
+from silicon_analyser.helper.properties import PropertiesUtil
+from silicon_analyser.grid import Grid
+from silicon_analyser.treeitem import TreeItem
+from silicon_analyser.helper.tree import Tree
 
 class MyWindow(AbstractMyWindow):
     _tree: Tree
@@ -32,11 +30,18 @@ class MyWindow(AbstractMyWindow):
     _minimap: MiniMap
     _image: FullImage
     _models: dict
+    _actionGridAddRowTop: QAction
+    _actionSaveModel: QAction
+    _actionLoadModel: QAction
+    _actionRemoveGrid: QAction
+    _actionRemoveLabel: QAction
+    _actionMade_by_TheCrazyT: QAction
+    _actionUrl: QAction
     autosave: bool
     
     def __init__(self):
         AbstractMyWindow.__init__(self)
-        uic.loadUi('main_window.ui', self)
+        uic.loadUi(p.abspath(p.join(p.dirname(__file__), '.')) + '/main_window.ui', self)
         self._treeModel = QStandardItemModel()
         self._propertiesModel = QStandardItemModel()
         self._properties.setModel(self._propertiesModel)
@@ -54,8 +59,15 @@ class MyWindow(AbstractMyWindow):
         self._treeModel.appendRow(self._treeAIItem)
         self._tree.setModel(self._treeModel)
         self._models = {}
+        self._actionUrl.triggered.connect(self.openMainUrl)
 
-        self._pixmap = QPixmap(sys.argv[1])
+        if(len(sys.argv) < 2):
+            dlg = QFileDialog()
+            filenames = dlg.getOpenFileName(caption="Load image",filter="Image (*.png;*.jpg;*.bmp;*.gif)",initialFilter="Trained model (*.h5)")
+            if(len(filenames) >= 1):
+                self._pixmap = QPixmap(filenames[0])
+        else:
+            self._pixmap = QPixmap(sys.argv[1])
         
         self._tree.initialize(self)
         self._computeBtn.initialize(self)
@@ -72,13 +84,13 @@ class MyWindow(AbstractMyWindow):
         
         self.autosave = False
         
-        if path.isfile(savefiles.SAVE_RECTS):
-            with open(savefiles.SAVE_RECTS,"r") as f:
+        if p.isfile(silicon_analyser.savefiles.SAVE_RECTS):
+            with open(silicon_analyser.savefiles.SAVE_RECTS,"r") as f:
                 rects = loadRects()
                 for k in rects.keys():
                     self.getTree().addTreeItem(k)
                 self._image.loadRects(rects)
-        if path.isfile(savefiles.SAVE_GRIDS):
+        if p.isfile(silicon_analyser.savefiles.SAVE_GRIDS):
             grids: list[Grid] = loadGrids()
             for gridKey in grids.keys():
                 grid, parentTreeItem = self.getTree().addTreeItem(gridKey,TreeItem.TYPE_GRID)
@@ -91,6 +103,10 @@ class MyWindow(AbstractMyWindow):
         
         self._image.drawImage()
         self.autosave = True
+        
+    def openMainUrl(self):
+        import webbrowser
+        return webbrowser.open('https://github.com/TheCrazyT/SiliconAnalyser')
         
     def getModel(self, name):
         if name in self._models:

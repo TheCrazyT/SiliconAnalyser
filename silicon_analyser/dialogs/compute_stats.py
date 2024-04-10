@@ -4,6 +4,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QLabel, QPushButton
 from pyqtgraph import PlotWidget
 from numpy import linspace
+import os.path as p
 
 class ComputeStatsDlg(QDialog):
     _lossgraph: PlotWidget
@@ -18,7 +19,7 @@ class ComputeStatsDlg(QDialog):
     
     def __init__(self):
         super().__init__()
-        uic.loadUi('dialogs/compute_stats.ui', self)
+        uic.loadUi(p.abspath(p.join(p.dirname(__file__), '.')) + '/compute_stats.ui', self)
         self._loss = linspace(0,0,self.width())
         self._val_loss = linspace(0,0,self.width())
         self._accuracy = linspace(0,0,self.width())
@@ -80,6 +81,12 @@ class ComputeStatsDlg(QDialog):
 
         QtGui.QGuiApplication.processEvents()
     
-    def setStatus(self,text):
+    def setError(self,error: Exception):
+        self._lblStatus.setStyleSheet("QLabel { background-color : red; color : black; }")
+        self._lblStatus.setText(str(error))
+        QtGui.QGuiApplication.processEvents()
+    
+    def setStatus(self,text: str):
+        self._lblStatus.setStyleSheet("QLabel { color : black; }")
         self._lblStatus.setText(text)
         QtGui.QGuiApplication.processEvents()

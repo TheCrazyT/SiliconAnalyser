@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = "silicon-analyser"
+version = "1.0.0"
+authors = [
+  { name="CrazyT", email="crazyt2019+sa@gmail.com" },
+]
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+description = "helps to analyse integrated circuit die images (for example from siliconpr0n.org) with the help of ai."
+dependencies = [
+  "torch",
+  "numpy",
+  "keras",
+  "PyQt5",
+  "pyqtgraph",
+  "scikit-learn",
+  "packaging"
+]
+
+[project.scripts]
+silicon-analyser = "silicon_analyser.main:main_cli"
+
+[project.urls]
+"Homepage" = "https://github.com/TheCrazyT/SiliconAnalyser"
+"Bug Tracker" = "https://github.com/TheCrazyT/SiliconAnalyser/issues"
+
+[tool.setuptools.packages.find]
+exclude = ["*.h5",".venv","bak","sampled","*.json","*.code-workspace",".vscode","*.zip"]
+include = ["silicon_analyser*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.ui"]
+
+#apt install libgl1
+#apt install libglib2.0-0
