@@ -37,6 +37,7 @@ class MyWindow(AbstractMyWindow):
     _actionRemoveLabel: QAction
     _actionMade_by_TheCrazyT: QAction
     _actionUrl: QAction
+    _actionSaveAsCsv: QAction
     autosave: bool
     
     def __init__(self):

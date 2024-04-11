@@ -86,3 +86,11 @@ class Grid:
                 if r in self._rects[k]:
                     return True
         return False
+    
+    
+def getAllCellRects(grid: Grid):
+    cellRects = []
+    for cx in range(0,grid.cols):
+        for cy in range(0,grid.rows):
+            cellRects.append((cx,cy))
+    return cellRects

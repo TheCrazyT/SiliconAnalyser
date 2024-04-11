@@ -4,6 +4,8 @@
 *.json
 *.zip
 *.code-workspace
+dist
 bak
 samples
+silicon_analyser.egg-info
 TODO.txt

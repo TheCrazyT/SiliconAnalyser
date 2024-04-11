@@ -26,3 +26,5 @@ class AbstractTreeHelper(QTreeView):
     def addTreeItem(self, text, type="auto", parent_obj=None, parent_item=None) -> tuple[Grid, TreeItem]:
         raise NotImplementedError()
     
+    def clearAIItem(self):
+        raise NotImplementedError()

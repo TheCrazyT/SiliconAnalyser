@@ -10,7 +10,7 @@ from silicon_analyser.dialogs.compute_stats import ComputeStatsDlg
 from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
 from silicon_analyser.grid import Grid
 from silicon_analyser.treeitem import TreeItem
-
+from silicon_analyser.helper.ai import appendFoundCellRects
 # because debugging in multithread can cause problems (breakpoints don't work)
 # I added this method ...
 def isSingleThread():
@@ -49,28 +49,6 @@ class Worker(QObject):
         import keras
         self._computeStatsDlg.setStatus("... finished Initializing keras")
         
-        def appendFoundCellRects(self, grid: Grid, aiGrid: Grid, labels: list[str], maxW, maxH, model_train: keras.Sequential):
-            allCellRects = self.getAllCellRects(grid)
-            dataList = []
-            dataIndexes = []
-            for cx,cy in allCellRects:
-                x = int(grid.x + cx*maxW)
-                y = int(grid.y + cy*maxH)
-                ex = x + maxW - 1
-                ey = y + maxH - 1
-                dataList.append(self._myWindow.getImage().fetchData(x,y,ex,ey))
-                dataIndexes.append((cx,cy))
-            data = np.array(dataList,dtype=np.float32)
-            print("data.shape",data.shape)
-            r = model_train.predict(data)
-            #r = r.cpu().detach().numpy()
-            print("r.shape",r.shape)
-            for ri in range(0,r.shape[0]):
-                currentRec = r[ri]
-                lblIdx = np.argmax(currentRec)
-                rx, ry = dataIndexes[ri]
-                aiGrid.setRect(rx,ry,labels[lblIdx])
-                    
         def appendFoundRects(self, rectKeys, maxW, maxH, model_conv, MP):
             import keras_cv
             bx = 10000
@@ -182,7 +160,7 @@ class Worker(QObject):
             self._myWindow.setStatusText("Accuracy: %s" % history.history["accuracy"][-1])
             
             if gridMode:
-                appendFoundCellRects(self, grid, aiGrid, list(labels), maxW, maxH, model_train)
+                appendFoundCellRects(self._myWindow.getImage(), grid, aiGrid, maxW, maxH, model_train)
             else:
                 appendFoundRects(self, list(rects.keys()), maxW, maxH, model_conv, MP)
             
@@ -192,13 +170,6 @@ class Worker(QObject):
             self._computeStatsDlg.setError(e)
         finally:
             self.finished.emit()
-        
-    def getAllCellRects(self, grid: Grid):
-        cellRects = []
-        for cx in range(0,grid.cols):
-            for cy in range(0,grid.rows):
-                cellRects.append((cx,cy))
-        return cellRects
         
     def initTrainAndValsForRects(self, rects, ignoreRects):
         maxW = 0

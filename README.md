@@ -42,7 +42,7 @@ Frameworks/Libraries used:
 
 # TODO
 
-* export of ai-cells as csv or bit-image
+* export of ai-cells as bit-image
 * auto-compute to calculate in background while you are selecting new cells for your labels
 * possibility to rotate grid
 * maybe store your model on a public place? (for others to use)

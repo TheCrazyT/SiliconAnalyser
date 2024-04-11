@@ -5,6 +5,7 @@ from PyQt5.QtGui import QStandardItem
 from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
 from silicon_analyser.grid import Grid
 from silicon_analyser.helper.abstract.abstracttreehelper import AbstractTreeHelper
+from silicon_analyser.helper.abstract.abstractimage import AbstractImage
 from silicon_analyser.treeitem import TreeItem
 from silicon_analyser.grid import Grid
 
@@ -15,6 +16,7 @@ class Tree(AbstractTreeHelper):
     _actionLoadModel: QAction
     _actionRemoveGrid: QAction
     _actionRemoveLabel: QAction
+    _actionSaveAsCsv: QAction
 
     def __init__(self, parent: QWidget | None = ...) -> None:
         super().__init__(parent)
@@ -27,16 +29,44 @@ class Tree(AbstractTreeHelper):
         self._actionLoadModel = self._myWindow._actionLoadModel
         self._actionRemoveGrid = self._myWindow._actionRemoveGrid
         self._actionRemoveLabel = self._myWindow._actionRemoveLabel
+        self._actionSaveAsCsv = self._myWindow._actionSaveAsCsv
         self.addAction(self._actionGridAddRowTop)
         self.addAction(self._actionSaveModel)
         self.addAction(self._actionLoadModel)
         self.addAction(self._actionRemoveGrid)
         self.addAction(self._actionRemoveLabel)
+        self.addAction(self._actionSaveAsCsv)
         self._actionGridAddRowTop.triggered.connect(self.addTopRow)
         self._actionSaveModel.triggered.connect(self.saveModel)
         self._actionLoadModel.triggered.connect(self.loadModel)
         self._actionRemoveGrid.triggered.connect(self.removeGrid)
         self._actionRemoveLabel.triggered.connect(self.removeLabel)
+        self._actionSaveAsCsv.triggered.connect(self.saveAsCsv)
+    
+    def saveAsCsv(self, *args, **kwargs):
+        print("saveAsCsv")
+        dlg = QFileDialog()
+        dlg.setLabelText(QFileDialog.DialogLabel.Accept, "Save")
+        filenames = []
+        filenames = dlg.getSaveFileName(caption="Save csv",filter="Comma separated values (*.csv)",initialFilter="Comma separated values (*.csv)")
+        if(len(filenames) >= 1):
+            grid:Grid 
+            if self.selectedType() == TreeItem.TYPE_GRID:
+                grid = self.getSelectedGrid()
+            if self.selectedType() == TreeItem.TYPE_AI_GRID:
+                grid = self.getSelectedAIGrid()
+            with open(filenames[0],"w") as f:
+                for r in range(0,grid.rows):
+                    cells = []
+                    for c in range(0,grid.cols):
+                        for l in list(grid.getLabels()):
+                            if grid.isRectSet(c,r,l):
+                                if l.isnumeric():
+                                    cells.append(f'{l}')
+                                else:
+                                    cells.append(f'"{l}"')
+                    f.write(",".join(cells))
+                    f.write("\n")
     
     def saveModel(self, *args, **kwargs):
         print("saveModel")
@@ -50,6 +80,14 @@ class Tree(AbstractTreeHelper):
             model: Sequential = self._myWindow.getModel(grid.name)
             model.save(filenames[0])
     
+    
+    def recreateAiTree(self, grid:Grid):
+        self.clearAIItem(grid.name)
+        aiGrid, aiTreeItem = self.addTreeItem(grid.name,TreeItem.TYPE_AI_GRID)
+        for l in list(grid.getLabels()):
+            self.addTreeItem(l,TreeItem.TYPE_AI_GRID_ITEM,aiGrid,aiTreeItem)
+        return aiGrid
+    
     def loadModel(self, *args, **kwargs):
         print("loadModel")
         myWindow: AbstractMyWindow = self._myWindow
@@ -61,7 +99,14 @@ class Tree(AbstractTreeHelper):
             filenames = dlg.selectedFiles()
         if(len(filenames) == 1):
             from keras.models import load_model
-            myWindow.setLastModel(load_model(filenames[0]))
+            from silicon_analyser.helper.ai import appendFoundCellRects
+            grid: Grid = self.getSelectedGrid()
+            model = load_model(filenames[0])
+            aiGrid = self.recreateAiTree(grid)
+            myWindow.setLastModel(grid.name, model)
+            img: AbstractImage = myWindow.getImage()
+            appendFoundCellRects(img, grid, aiGrid, None, None, model)
+            img.drawImage()
     
     def removeGrid(self, *args, **kwargs):
         print("removeGrid")
@@ -115,8 +160,14 @@ class Tree(AbstractTreeHelper):
             self._actionLoadModel.setVisible(False)
         if(selectedType == TreeItem.TYPE_GRID):
             self._actionRemoveGrid.setVisible(True)
+            self._actionSaveAsCsv.setVisible(True)
         else:
             self._actionRemoveGrid.setVisible(False)
+            self._actionSaveAsCsv.setVisible(False)
+        if(selectedType == TreeItem.TYPE_AI_GRID):
+            self._actionSaveAsCsv.setVisible(True)
+        else:
+            self._actionSaveAsCsv.setVisible(False)
         if(selectedType == TreeItem.TYPE_MANUAL):
             self._actionRemoveLabel.setVisible(True)
         else:
@@ -243,13 +294,20 @@ class Tree(AbstractTreeHelper):
             return False
         return True
     
-    def clearAIItem(self):
+    def clearAIItem(self, name:str = None):
         myWindow: AbstractMyWindow = self._myWindow
         treeAIItem = myWindow.getAIItem()
         if treeAIItem.hasChildren():
-            treeAIItem.removeRows(0,treeAIItem.rowCount())
-        treeAIItem.clearData()
-        myWindow.getImage().clearAIRects()
+            if name is None:
+                treeAIItem.removeRows(0,treeAIItem.rowCount())
+                treeAIItem.clearData()
+                myWindow.getImage().clearAIRects()
+            else:
+                for i in range(0,treeAIItem.rowCount):
+                    child = treeAIItem.child(i)
+                    if child.data(TreeItem.TEXT) == name:
+                        child.removeRows(0,treeAIItem.rowCount())
+                        child.clearData()
     
     def selectedType(self) -> str:
         sel = self.getSelectedItem()

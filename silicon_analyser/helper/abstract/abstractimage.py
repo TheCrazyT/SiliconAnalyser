@@ -79,3 +79,6 @@ class AbstractImage(QLabel):
     
     def activateGrid(self, text):
         raise NotImplementedError()
+    
+    def getAIIgnoreRects(self) -> list:
+        raise NotImplementedError()
