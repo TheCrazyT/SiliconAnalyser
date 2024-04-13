@@ -1,6 +1,12 @@
 # Installation
 
+Install from source:
+
 `pip install .`
+
+Install from pip:
+
+`pip install silicon-analyser`
 
 # Information
 
@@ -38,7 +44,7 @@ Frameworks/Libraries used:
     * "acc" stands for "accuracy", "val" for "validation"
 * found ai-cells will be drawn green
 
-![image](docs/small_tutorial.gif)
+![image](https://raw.githubusercontent.com/TheCrazyT/SiliconAnalyser/main/docs/small_tutorial.gif)
 
 # TODO
 

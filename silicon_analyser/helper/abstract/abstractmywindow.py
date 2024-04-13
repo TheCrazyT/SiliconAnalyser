@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QPushButton
 from PyQt5.QtGui import QStandardItem
 from PyQt5.QtWidgets import QAction
 
@@ -15,7 +15,7 @@ class AbstractMyWindow(QMainWindow):
     autosave: bool
     def __init__(self):
         QMainWindow.__init__(self)
-    
+        
     def getManualItem(self) -> QStandardItem:
         raise NotImplementedError()
     
@@ -92,4 +92,7 @@ class AbstractMyWindow(QMainWindow):
         raise NotImplementedError()
     
     def hasModel(self, name) -> bool:
+        raise NotImplementedError()
+    
+    def drawImgAndMinimap(self):
         raise NotImplementedError()

@@ -1,9 +1,10 @@
 from PyQt5 import QtCore, uic
 from PyQt5.QtCore import Qt, QItemSelection
-from PyQt5.QtWidgets import QFileDialog, QTableView, QStatusBar, QAction
+from PyQt5.QtWidgets import QFileDialog, QTableView, QStatusBar, QAction, QPushButton
 from PyQt5.QtGui import QPixmap, QStandardItem, QStandardItemModel
 from os import path as p
 import sys
+
 import silicon_analyser.savefiles
 from silicon_analyser.savefiles import loadGrids, loadRects
 from silicon_analyser.helper.abstract.abstracttreehelper import AbstractTreeHelper
@@ -43,9 +44,12 @@ class MyWindow(AbstractMyWindow):
     def __init__(self):
         AbstractMyWindow.__init__(self)
         uic.loadUi(p.abspath(p.join(p.dirname(__file__), '.')) + '/main_window.ui', self)
+        tree: Tree = self._tree
+        properties: QTableView = self._properties
+                
         self._treeModel = QStandardItemModel()
         self._propertiesModel = QStandardItemModel()
-        self._properties.setModel(self._propertiesModel)
+        properties.setModel(self._propertiesModel)
         self._propertiesUtil = PropertiesUtil(self,self._properties)
         
         self._treeManualItem = QStandardItem("Manual")
@@ -58,7 +62,7 @@ class MyWindow(AbstractMyWindow):
                           QtCore.Qt.ItemIsEnabled)
         self._treeAIItem.setCheckState(QtCore.Qt.Unchecked)
         self._treeModel.appendRow(self._treeAIItem)
-        self._tree.setModel(self._treeModel)
+        tree.setModel(self._treeModel)
         self._models = {}
         self._actionUrl.triggered.connect(self.openMainUrl)
 
@@ -70,12 +74,22 @@ class MyWindow(AbstractMyWindow):
         else:
             self._pixmap = QPixmap(sys.argv[1])
         
-        self._tree.initialize(self)
-        self._computeBtn.initialize(self)
-        self._addGridBtn.initialize(self)
-        self._addLabelBtn.initialize(self)
-        self._minimap.initialize(self, self._pixmap)
-        self._image.initialize(self, self._pixmap)
+        computeBtn: ComputeBtn = self._computeBtn
+        addGridBtn: AddGridBtn = self._addGridBtn
+        addLabelBtn: AddLabelBtn = self._addLabelBtn
+        minimap: MiniMap = self._minimap
+        image: FullImage = self._image
+
+        tree.initialize(self)
+        computeBtn.initialize(self)
+        addGridBtn.initialize(self)
+        addLabelBtn.initialize(self)
+        minimap.initialize(self, self._pixmap)
+        image.initialize(self, self._pixmap)
+        
+        computeBtn.setDisabled(True)
+        addLabelBtn.setDisabled(True)
+        tree.evtTreeSelectionChanged.connect(self.treeSelectionChanged)
         
         self._posX = 0
         self._posY = 0
@@ -90,9 +104,9 @@ class MyWindow(AbstractMyWindow):
                 rects = loadRects()
                 for k in rects.keys():
                     self.getTree().addTreeItem(k)
-                self._image.loadRects(rects)
+                image.loadRects(rects)
         if p.isfile(silicon_analyser.savefiles.SAVE_GRIDS):
-            grids: list[Grid] = loadGrids()
+            grids: dict[Grid] = loadGrids()
             for gridKey in grids.keys():
                 grid, parentTreeItem = self.getTree().addTreeItem(gridKey,TreeItem.TYPE_GRID)
                 for gridItemKey in grids[gridKey].getLabels():
@@ -100,11 +114,27 @@ class MyWindow(AbstractMyWindow):
                     text = treeItem.data(TreeItem.TEXT)
                     if(not grids[gridKey]._rectsActive[text]):
                         treeItem.setCheckState(QtCore.Qt.Unchecked)
-            self._image.loadGrids(grids)
+            image.loadGrids(grids)
         
-        self._image.drawImage()
+        image.drawImage()
         self.autosave = True
         
+    def treeSelectionChanged(self, selection: QItemSelection):
+        tree: Tree = self._tree
+        selectedType: str = tree.selectedType()
+        computeBtn: ComputeBtn = self._computeBtn
+        addLabelBtn: AddLabelBtn = self._addLabelBtn
+        if((selectedType == TreeItem.TYPE_GRID_ITEM)
+           or (selectedType == TreeItem.TYPE_GRID)
+           or (selectedType == TreeItem.TYPE_AI_GRID)
+           or (selectedType == TreeItem.TYPE_AI_GRID_ITEM)
+           ):
+            computeBtn.setDisabled(False)
+            addLabelBtn.setDisabled(False)
+        else:
+            computeBtn.setDisabled(True)
+            addLabelBtn.setDisabled(True)
+
     def openMainUrl(self):
         import webbrowser
         return webbrowser.open('https://github.com/TheCrazyT/SiliconAnalyser')
@@ -124,12 +154,15 @@ class MyWindow(AbstractMyWindow):
     
     def getImage(self) -> AbstractImage:
         return self._image
+    
+    def getMinimap(self) -> MiniMap:
+        return self._minimap
 
     def imageWidth(self):
-        return self._image.width()
+        return self.getImage().width()
 
     def imageHeight(self):
-        return self._image.height()
+        return self.getImage().height()
             
     def setStatusText(self, text):
         self._statusBar.showMessage(text)
@@ -162,8 +195,8 @@ class MyWindow(AbstractMyWindow):
         self._posY = y
     
     def drawImgAndMinimap(self):
-        self._image.drawImage()
-        self._minimap.drawMinimap()
+        self.getImage().drawImage()
+        self.getMinimap().drawMinimap()
     
     def reloadProperyWindowByGrid(self, grid):
         return self._propertiesUtil.reloadProperyWindowByGrid(grid)

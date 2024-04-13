@@ -1,6 +1,8 @@
 import json
 from json import JSONDecoder, JSONEncoder
+
 from silicon_analyser.grid import Grid
+from silicon_analyser.rect import Rect
 
 SAVE_RECTS = "rects.json"
 SAVE_GRIDS = "grids.json"
@@ -34,11 +36,11 @@ class MyJSONEncoder(JSONEncoder):
         def default(self, o):
             return o.__dict__
 
-def loadRects():
+def loadRects() -> dict[Rect]:
     with open(SAVE_RECTS,"r") as f:
         return json.load(f)
 
-def loadGrids():
+def loadGrids() -> dict[Grid]:
     with open(SAVE_GRIDS,"r") as f:
         return json.load(f, cls=JSONGridDecoder)
     

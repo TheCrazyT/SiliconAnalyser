@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt, QRect, QSize
+from PyQt5.QtCore import Qt, QRect, QSize, QTimer
 from PyQt5.QtWidgets import QLabel, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap, QColor, QMouseEvent, QPainter, QPen, QBrush
 import numpy as np
@@ -16,6 +16,12 @@ class FullImage(QLabel):
     _aiGrids: dict[Grid]
     _gridsActive: dict[bool]
     _aiGridsActive: dict[bool]
+    _moveStartX: int
+    _moveStartY: int
+    _moveDeltaX: int
+    _moveDeltaY: int
+    _moveTimer: QTimer
+    
     def __init__(self, parent):
         QLabel.__init__(self, parent)
         self._drawRectStart = False
@@ -33,6 +39,17 @@ class FullImage(QLabel):
         self._aiRectActive = {}
         self._aiIgnoreRects = []
         self.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
+        self._moveTimer = QTimer()
+        self._moveTimer.timeout.connect(self.moveUpdate)
+        self._moveTimer.setInterval(int(1000 * 0.2))
+    
+    def moveUpdate(self):
+        posX, posY = self._myWindow.getPos()
+        posX += self._moveDeltaX
+        posY += self._moveDeltaY
+        self._myWindow.setPosX(posX)
+        self._myWindow.setPosY(posY)
+        self._myWindow.drawImgAndMinimap()
     
     def initialize(self, myWindow: AbstractMyWindow, pixmap: QPixmap):
         self._myWindow = myWindow
@@ -75,6 +92,12 @@ class FullImage(QLabel):
                         saveGrids(self._grids)
                     
     def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MiddleButton:
+            self._moveStart = True
+            self._moveStartX = event.x()
+            self._moveStartY = event.y()
+            self._moveDeltaX = 0
+            self._moveDeltaY = 0
         tree = self._myWindow.getTree()
         if tree.selectedType() == TreeItem.TYPE_GRID_ITEM:
             self.markGridItem(event.x(),event.y(),event.button())
@@ -88,6 +111,11 @@ class FullImage(QLabel):
                     self._rectStartY = self._translateEventToPixel(event.y())
     
     def mouseMoveEvent(self, event: QMouseEvent | None) -> None:
+        if self._moveStart:
+            self._moveDeltaX = event.x() - self._moveStartX
+            self._moveDeltaY = event.y() - self._moveStartY
+            self._moveTimer.start()
+
         if self._drawRectStart:
             self._rectEndX = self._translateEventToPixel(event.x())
             self._rectEndY = self._translateEventToPixel(event.y())
@@ -110,6 +138,10 @@ class FullImage(QLabel):
             self.setPixmap(pixmap)
      
     def mouseReleaseEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MiddleButton:
+            self._moveStart = False
+            self._moveTimer.stop()
+            
         if event.button() == Qt.LeftButton:
             self._drawRectStart = False
             print("mouseReleaseEvent",self._rectStartX,self._rectStartY,self._rectEndX,self._rectEndY)

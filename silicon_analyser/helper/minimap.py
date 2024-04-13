@@ -17,7 +17,7 @@ class MiniMap(QLabel):
         sc1y = 300/self._pixmap.height()
         self._myWindow.setPosX(int(event.x()/sc1x))
         self._myWindow.setPosY(int(event.y()/sc1y))
-        self._myWindow.drawImg()
+        self._myWindow.drawImgAndMinimap()
         print(self._myWindow.getPosX(),self._myWindow.getPosY())
 
     def scaleMinimapX(self):

@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QItemSelection
+from PyQt5.QtCore import QItemSelection, pyqtSignal
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QTreeView, QWidget, QAction, QFileDialog
 from PyQt5.QtGui import QStandardItem
@@ -17,6 +17,7 @@ class Tree(AbstractTreeHelper):
     _actionRemoveGrid: QAction
     _actionRemoveLabel: QAction
     _actionSaveAsCsv: QAction
+    evtTreeSelectionChanged: pyqtSignal = pyqtSignal(QItemSelection)
 
     def __init__(self, parent: QWidget | None = ...) -> None:
         super().__init__(parent)
@@ -180,6 +181,7 @@ class Tree(AbstractTreeHelper):
             myWindow.getImage().drawImage()
         if(selectedType == TreeItem.TYPE_AI_GRID_ITEM):
             myWindow.getImage().drawImage()
+        self.evtTreeSelectionChanged.emit(selection)
             
     def addTreeItem(self, text, type="auto", parent_obj=None, parent_item=None) -> tuple[Grid, TreeItem]:
         obj = None
