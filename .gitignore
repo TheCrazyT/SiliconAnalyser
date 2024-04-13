@@ -5,6 +5,7 @@
 *.zip
 *.code-workspace
 dist
+build
 bak
 samples
 silicon_analyser.egg-info

@@ -1,6 +1,6 @@
-from grid import Grid, getAllCellRects
 import numpy as np
 import keras
+from silicon_analyser.grid import Grid, getAllCellRects
 from silicon_analyser.helper.abstract.abstractimage import AbstractImage
 
 def getDefaultMaxWMaxH(grid: Grid):

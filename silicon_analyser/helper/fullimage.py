@@ -42,6 +42,7 @@ class FullImage(QLabel):
         self._moveTimer = QTimer()
         self._moveTimer.timeout.connect(self.moveUpdate)
         self._moveTimer.setInterval(int(1000 * 0.2))
+        self._moveStart = False
     
     def moveUpdate(self):
         posX, posY = self._myWindow.getPos()
