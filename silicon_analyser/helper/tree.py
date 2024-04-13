@@ -1,7 +1,8 @@
-from PyQt5.QtCore import QItemSelection, pyqtSignal
+import typing
+from PyQt5.QtCore import QItemSelection, pyqtSignal, QItemSelectionModel
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QTreeView, QWidget, QAction, QFileDialog
-from PyQt5.QtGui import QStandardItem
+from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
 from silicon_analyser.grid import Grid
 from silicon_analyser.helper.abstract.abstracttreehelper import AbstractTreeHelper
@@ -19,7 +20,7 @@ class Tree(AbstractTreeHelper):
     _actionSaveAsCsv: QAction
     evtTreeSelectionChanged: pyqtSignal = pyqtSignal(QItemSelection)
 
-    def __init__(self, parent: QWidget | None = ...) -> None:
+    def __init__(self, parent: QWidget | None = ...) -> None: # type: ignore
         super().__init__(parent)
     
     def initialize(self, myWindow: AbstractMyWindow):
@@ -51,16 +52,18 @@ class Tree(AbstractTreeHelper):
         filenames = []
         filenames = dlg.getSaveFileName(caption="Save csv",filter="Comma separated values (*.csv)",initialFilter="Comma separated values (*.csv)")
         if(len(filenames) >= 1):
-            grid:Grid 
+            grid:Grid|None
             if self.selectedType() == TreeItem.TYPE_GRID:
                 grid = self.getSelectedGrid()
             if self.selectedType() == TreeItem.TYPE_AI_GRID:
                 grid = self.getSelectedAIGrid()
+            if grid is None:
+                return
             with open(filenames[0],"w") as f:
                 for r in range(0,grid.rows):
                     cells = []
                     for c in range(0,grid.cols):
-                        for l in list(grid.getLabels()):
+                        for l in grid.getLabels():
                             if grid.isRectSet(c,r,l):
                                 if l.isnumeric():
                                     cells.append(f'{l}')
@@ -78,14 +81,15 @@ class Tree(AbstractTreeHelper):
         if(len(filenames) >= 1):
             from keras.models import Sequential
             grid = self.getSelectedGrid()
-            model: Sequential = self._myWindow.getModel(grid.name)
-            model.save(filenames[0])
+            if grid is not None:
+                model: Sequential = self._myWindow.getModel(grid.name)
+                model.save(filenames[0])
     
     
     def recreateAiTree(self, grid:Grid):
         self.clearAIItem(grid.name)
         aiGrid, aiTreeItem = self.addTreeItem(grid.name,TreeItem.TYPE_AI_GRID)
-        for l in list(grid.getLabels()):
+        for l in grid.getLabels():
             self.addTreeItem(l,TreeItem.TYPE_AI_GRID_ITEM,aiGrid,aiTreeItem)
         return aiGrid
     
@@ -101,18 +105,21 @@ class Tree(AbstractTreeHelper):
         if(len(filenames) == 1):
             from keras.models import load_model
             from silicon_analyser.helper.ai import appendFoundCellRects
-            grid: Grid = self.getSelectedGrid()
-            model = load_model(filenames[0])
-            aiGrid = self.recreateAiTree(grid)
-            myWindow.setLastModel(grid.name, model)
-            img: AbstractImage = myWindow.getImage()
-            appendFoundCellRects(img, grid, aiGrid, None, None, model)
-            img.drawImage()
+            grid: Grid|None = self.getSelectedGrid()
+            if grid is not None:
+                model = load_model(filenames[0])
+                aiGrid = self.recreateAiTree(grid)
+                myWindow.setLastModel(grid.name, model)
+                img: AbstractImage = myWindow.getImage()
+                appendFoundCellRects(img, grid, aiGrid, None, None, model) # type: ignore
+                img.drawImage()
     
     def removeGrid(self, *args, **kwargs):
         print("removeGrid")
         myWindow: AbstractMyWindow = self._myWindow
-        grid: Grid = self.getSelectedGrid()
+        grid: Grid|None = self.getSelectedGrid()
+        if grid is None:
+            return
         myWindow.getImage().removeGrid(grid.name)
         myWindow.getImage().drawImage()
         self.removeSelectedRow()
@@ -131,7 +138,9 @@ class Tree(AbstractTreeHelper):
         myWindow: AbstractMyWindow = self._myWindow
         label = self.selectedLabel()
         if(self.selectedType() == TreeItem.TYPE_GRID_ITEM):
-            grid: Grid = self.getSelectedGrid()
+            grid: Grid|None = self.getSelectedGrid()
+            if grid is None:
+                return
             grid.removeRectGroup(label)
         elif(self.selectedType() == TreeItem.TYPE_MANUAL):
             myWindow.getImage().removeRectGroup(label)
@@ -140,7 +149,9 @@ class Tree(AbstractTreeHelper):
 
     def addTopRow(self, *args, **kwargs):
         print("addTopRow")
-        grid: Grid = self.getSelectedGrid()
+        grid: Grid|None = self.getSelectedGrid()
+        if grid is None:
+            return
         grid.addTopRow()
         
     def treeSelectionChanged(self, selection: QItemSelection):
@@ -151,7 +162,9 @@ class Tree(AbstractTreeHelper):
         selectedType = tree.selectedType()
         if((selectedType == TreeItem.TYPE_GRID_ITEM) or (selectedType == TreeItem.TYPE_GRID)):
             self._actionGridAddRowTop.setVisible(True)
-            grid: Grid = self.getSelectedGrid()
+            grid: Grid|None = self.getSelectedGrid()
+            if grid is None:
+                return
             if myWindow.hasModel(grid.name):
                 self._actionSaveModel.setVisible(True)
             self._actionLoadModel.setVisible(True)
@@ -183,8 +196,8 @@ class Tree(AbstractTreeHelper):
             myWindow.getImage().drawImage()
         self.evtTreeSelectionChanged.emit(selection)
             
-    def addTreeItem(self, text, type="auto", parent_obj=None, parent_item=None) -> tuple[Grid, TreeItem]:
-        obj = None
+    def addTreeItem(self, text, type="auto", parent_obj=None, parent_item=None) -> tuple[typing.Any | None, TreeItem]:
+        obj: typing.Any = None
         myWindow: AbstractMyWindow = self._myWindow
         img = myWindow.getImage()
         tree: Tree = self
@@ -229,21 +242,26 @@ class Tree(AbstractTreeHelper):
         if type == TreeItem.TYPE_AI_GRID:
             treeItem: QStandardItem = myWindow.getAIItem()
         if type == TreeItem.TYPE_GRID_ITEM:
-            treeItem: QStandardItem = self.getSelectedItem().parent()
+            selectedItem = self.getSelectedItem()
+            if selectedItem is not None:
+                treeItem: QStandardItem = selectedItem.parent()
         if type == TreeItem.TYPE_AI_GRID_ITEM:
-            treeItem: QStandardItem = self.getSelectedItem().parent()
+            selectedItem = self.getSelectedItem()
+            if selectedItem is not None:
+                treeItem: QStandardItem = selectedItem.parent()
         if parent_item is not None:
             treeItem: QStandardItem = parent_item
-        tree: QTreeView = self
+        tree: Tree = self
         treeItem.appendRow(item)
         tree.expandAll()
         selModel = tree.selectionModel()
         tree.clearSelection()
-        selModel.select(tree.model().indexFromItem(item), selModel.Select)
-        item.setFlags(QtCore.Qt.ItemIsUserCheckable |
-                        QtCore.Qt.ItemIsEnabled |
-                        QtCore.Qt.ItemIsSelectable)
-        item.setCheckState(QtCore.Qt.Checked)
+        model: QStandardItemModel = typing.cast(QStandardItemModel, tree.model())
+        selModel.select(model.indexFromItem(item), QItemSelectionModel.SelectionFlag.Select)
+        item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable |
+                        QtCore.Qt.ItemFlag.ItemIsEnabled |
+                        QtCore.Qt.ItemFlag.ItemIsSelectable)
+        item.setCheckState(QtCore.Qt.CheckState.Checked)
         if type in [TreeItem.TYPE_AI_GRID,TreeItem.TYPE_GRID,TreeItem.TYPE_MANUAL]:
             item.onChecked = self.itemChecked
         if type == TreeItem.TYPE_GRID_ITEM:
@@ -254,49 +272,59 @@ class Tree(AbstractTreeHelper):
             item.onChecked = self.aiItemChecked
         return obj, item
     
-    def getSelectedItem(self) -> QStandardItem:
+    def getSelectedItem(self) -> QStandardItem|None:
         tree: QTreeView = self
         selection = tree.selectedIndexes()
         cnt = len(selection)
         if(cnt == 0):
-            return
+            return None
         sel = selection[0]
-        return tree.model().itemFromIndex(sel)
+        model = typing.cast(QStandardItemModel, tree.model())
+        return model.itemFromIndex(sel)
     
-    def getSelectedGrid(self):
+    def getSelectedGrid(self) -> Grid|None:
         myWindow: AbstractMyWindow = self._myWindow
-        type = self.getSelectedItem().data(TreeItem.TYPE)
+        selectedItem = self.getSelectedItem()
+        if selectedItem is None:
+            return None
+        type = selectedItem.data(TreeItem.TYPE)
         if type == TreeItem.TYPE_GRID_ITEM:
-            return self.getSelectedItem().parent().data(TreeItem.OBJECT)
+            return selectedItem.parent().data(TreeItem.OBJECT)
         if type == TreeItem.TYPE_AI_GRID_ITEM:
-            gridName = self.getSelectedItem().parent().data(TreeItem.TEXT)
+            gridName = selectedItem.parent().data(TreeItem.TEXT)
             manual: QStandardItem = myWindow.getManualItem()
             for r in range(0,manual.rowCount()):
                 if manual.child(r).data(TreeItem.TEXT) == gridName:
                     return manual.child(r).data(TreeItem.OBJECT)
         if type == TreeItem.TYPE_AI_GRID:
-            gridName = self.getSelectedItem().data(TreeItem.TEXT)
+            gridName = selectedItem.data(TreeItem.TEXT)
             manual: QStandardItem = myWindow.getManualItem()
             for r in range(0,manual.rowCount()):
                 if manual.child(r).data(TreeItem.TEXT) == gridName:
                     return manual.child(r).data(TreeItem.OBJECT)
-        return None if type != TreeItem.TYPE_GRID else self.getSelectedItem().data(TreeItem.OBJECT)
+        return None if type != TreeItem.TYPE_GRID else selectedItem.data(TreeItem.OBJECT)
 
     def getSelectedAIGrid(self):
-        type = self.getSelectedItem().data(TreeItem.TYPE)
-        return None if type != TreeItem.TYPE_AI_GRID else self.getSelectedItem().data(TreeItem.OBJECT)
+        selectedItem = self.getSelectedItem()
+        if selectedItem is None:
+            return
+        type = selectedItem.data(TreeItem.TYPE)
+        return None if type != TreeItem.TYPE_AI_GRID else selectedItem.data(TreeItem.OBJECT)
     
     def isItemSelected(self, rectLabel, gridName, gridItemType) -> bool:
-        type = self.getSelectedItem().data(TreeItem.TYPE)
+        selectedItem = self.getSelectedItem()
+        if selectedItem is None:
+            return False
+        type = selectedItem.data(TreeItem.TYPE)
         if type != gridItemType:
             return False
-        if self.getSelectedItem().parent().data(TreeItem.TEXT) != gridName:
+        if selectedItem.parent().data(TreeItem.TEXT) != gridName:
             return False
-        if self.getSelectedItem().data(TreeItem.TEXT) != rectLabel:
+        if selectedItem.data(TreeItem.TEXT) != rectLabel:
             return False
         return True
     
-    def clearAIItem(self, name:str = None):
+    def clearAIItem(self, name:str|None = None):
         myWindow: AbstractMyWindow = self._myWindow
         treeAIItem = myWindow.getAIItem()
         if treeAIItem.hasChildren():
@@ -305,19 +333,19 @@ class Tree(AbstractTreeHelper):
                 treeAIItem.clearData()
                 myWindow.getImage().clearAIRects()
             else:
-                for i in range(0,treeAIItem.rowCount):
+                for i in range(0,treeAIItem.rowCount()):
                     child = treeAIItem.child(i)
                     if child.data(TreeItem.TEXT) == name:
                         child.removeRows(0,treeAIItem.rowCount())
                         child.clearData()
     
-    def selectedType(self) -> str:
+    def selectedType(self) -> str|None:
         sel = self.getSelectedItem()
         if sel is None:
             return None
         return sel.data(TreeItem.TYPE)
     
-    def selectedLabel(self) -> str:
+    def selectedLabel(self) -> str|None:
         sel = self.getSelectedItem()
         if sel is None:
             return None

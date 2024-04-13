@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QMainWindow, QPushButton
+from PyQt5.QtCore import QItemSelection
+from PyQt5.QtWidgets import QMainWindow, QPushButton, QAction
 from PyQt5.QtGui import QStandardItem
-from PyQt5.QtWidgets import QAction
 
 from silicon_analyser.helper.abstract.abstractimage import AbstractImage
 from silicon_analyser.helper.abstract.abstracttreehelper import AbstractTreeHelper
@@ -73,7 +73,7 @@ class AbstractMyWindow(QMainWindow):
     def reloadProperyWindowByGrid(self, grid):
         raise NotImplementedError()
     
-    def reloadPropertyWindow(self):
+    def reloadPropertyWindow(self, selection: QItemSelection):
         raise NotImplementedError()
     
     def getImage(self) -> AbstractImage:

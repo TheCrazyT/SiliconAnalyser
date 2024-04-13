@@ -1,6 +1,6 @@
 class Grid:
-    _rects: dict[list[list[int]]]
-    _rectsActive: dict[bool]
+    _rects: dict[str,list[list[int]]]
+    _rectsActive: dict[str,bool]
     def __init__(self, name, x, y, cols, rows, width, height):
         self.name = name
         self.x = x
@@ -28,7 +28,7 @@ class Grid:
         self._rectsActive = grid._rectsActive
         
     def getLabels(self) -> list[str]:
-        return self._rects.keys()
+        return list(self._rects.keys())
     
     def removeRectGroup(self, label):
         del self._rects[label]
@@ -67,7 +67,7 @@ class Grid:
         if r in self._rects[label]:
             self._rects[label].remove(r)
     
-    def rectLabel(self, col, row) -> str:
+    def rectLabel(self, col, row) -> str|None:
         r = [col, row]
         keys = self._rects.keys()
         for k in keys:

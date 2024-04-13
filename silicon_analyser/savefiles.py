@@ -36,11 +36,11 @@ class MyJSONEncoder(JSONEncoder):
         def default(self, o):
             return o.__dict__
 
-def loadRects() -> dict[Rect]:
+def loadRects() -> dict[str, Rect]:
     with open(SAVE_RECTS,"r") as f:
         return json.load(f)
 
-def loadGrids() -> dict[Grid]:
+def loadGrids() -> dict[str, Grid]:
     with open(SAVE_GRIDS,"r") as f:
         return json.load(f, cls=JSONGridDecoder)
     

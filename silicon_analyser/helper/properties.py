@@ -1,5 +1,6 @@
+import typing
 from PyQt5.QtWidgets import QTableView
-from PyQt5.QtCore import QItemSelection, QModelIndex, Qt
+from PyQt5.QtCore import QItemSelection, QModelIndex, Qt, QAbstractItemModel
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from silicon_analyser.savefiles import saveGrids
 from silicon_analyser.grid import Grid
@@ -18,10 +19,10 @@ class PropertiesUtil:
         if valueCol.column() != 1:
             return
         row = valueCol.row()
-        model: QStandardItemModel = self._properties.model()
+        model: QStandardItemModel = typing.cast(QStandardItemModel,self._properties.model())
         nameCol = model.item(row,0)
-        name = nameCol.data(Qt.DisplayRole)
-        value = valueCol.data(Qt.DisplayRole)
+        name = nameCol.data(Qt.ItemDataRole.DisplayRole)
+        value = valueCol.data(Qt.ItemDataRole.DisplayRole)
         print(name)
         print(value)
         grid: Grid = self._myWindow.getTree().getSelectedGrid()
@@ -57,7 +58,7 @@ class PropertiesUtil:
 
     def reloadProperyWindowByGrid(self, grid):
         table: QTableView = self._properties
-        model = table.model()
+        model: QStandardItemModel = typing.cast(QStandardItemModel, table.model())
         rowPosition = model.rowCount()
         model.removeRows(0,model.rowCount())
         model.insertRow(rowPosition,[QStandardItem("name"),QStandardItem(grid.name)])

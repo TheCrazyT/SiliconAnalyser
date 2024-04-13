@@ -16,7 +16,7 @@ def getDefaultMaxWMaxH(grid: Grid):
 def appendFoundCellRects(img: AbstractImage, grid: Grid, aiGrid: Grid, maxW, maxH, model: keras.Sequential):
     if maxW is None or maxH is None:
         maxW, maxH = getDefaultMaxWMaxH(grid)
-    labels = list(grid.getLabels())
+    labels = grid.getLabels()
     allCellRects = getAllCellRects(grid)
     dataList = []
     dataIndexes = []

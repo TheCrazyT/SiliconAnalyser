@@ -14,14 +14,16 @@ class TreeItem(QStandardItem):
     TYPE_MANUAL = "manual"
     TYPE_AI = "ai"
     
+    onChecked: typing.Callable|None
+    
     def __init__(self, text, type, obj):
         QStandardItem.__init__(self,text)
-        self.onChecked = None
         self._text = text
         self._type = type
         self._obj  = obj
+        self.onChecked = None
     
-    def data(self, role: int = ...):
+    def data(self, role: int = ...): # type: ignore
         if(role == TreeItem.TYPE):
             return self._type
         if(role == TreeItem.OBJECT):
@@ -33,8 +35,8 @@ class TreeItem(QStandardItem):
     def getObject(self):
         return self._obj
     
-    def setData(self, value: typing.Any, role: int = ...) -> None:
-        if role == Qt.CheckStateRole:
+    def setData(self, value: typing.Any, role: int = ...) -> None: # type: ignore
+        if role == Qt.ItemDataRole.CheckStateRole:
             if self.onChecked is not None:
                 if value == 0:
                     self.onChecked(self,False,self._text)

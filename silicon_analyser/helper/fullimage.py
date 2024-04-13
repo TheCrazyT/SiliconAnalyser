@@ -9,13 +9,13 @@ from silicon_analyser.rect import Rect
 from silicon_analyser.treeitem import TreeItem
 
 class FullImage(QLabel):
-    _rects: dict[Rect]
-    _aiRects: dict[Rect]
-    _rectActive: dict[bool]
-    _grids: dict[Grid]
-    _aiGrids: dict[Grid]
-    _gridsActive: dict[bool]
-    _aiGridsActive: dict[bool]
+    _rects: dict[str, list[Rect]]
+    _aiRects: dict[str, list[Rect]]
+    _rectActive: dict[str, bool]
+    _grids: dict[str, Grid]
+    _aiGrids: dict[str, Grid]
+    _gridsActive: dict[str, bool]
+    _aiGridsActive: dict[str, bool]
     _moveStartX: int
     _moveStartY: int
     _moveDeltaX: int
@@ -57,10 +57,10 @@ class FullImage(QLabel):
         self._pixmap: QPixmap = pixmap
         self._currentImg = pixmap
     
-    def getRects(self) -> list[Rect]:
+    def getRects(self) -> dict[str,list[Rect]]:
         return self._rects
     
-    def getAiRects(self) -> list[Rect]:
+    def getAiRects(self) -> dict[str,list[Rect]]:
         return self._aiRects
     
     def getAIIgnoreRects(self) -> list:
@@ -85,15 +85,15 @@ class FullImage(QLabel):
                 if x < evx and y < evy and ex > evx and ey > evy:
                     tevx = self._translateEventToPixel(evx)
                     tevy = self._translateEventToPixel(evy)
-                    if button == Qt.LeftButton:
+                    if button == Qt.MouseButton.LeftButton:
                         grid.setRect(int((tevx - (grid.x - posX))/(grid.width/grid.cols)),int((tevy - (grid.y - posY))/(grid.height/grid.rows)), self._myWindow.getTree().selectedLabel())
-                    if button == Qt.RightButton:
+                    if button == Qt.MouseButton.RightButton:
                         grid.unsetRect(int((tevx - (grid.x - posX))/(grid.width/grid.cols)),int((tevy - (grid.y - posY))/(grid.height/grid.rows)), self._myWindow.getTree().selectedLabel())
                     if self._myWindow.autosave:
                         saveGrids(self._grids)
                     
     def mousePressEvent(self, event: QMouseEvent):
-        if event.button() == Qt.MiddleButton:
+        if event.button() == Qt.MouseButton.MiddleButton:
             self._moveStart = True
             self._moveStartX = event.x()
             self._moveStartY = event.y()
@@ -103,7 +103,7 @@ class FullImage(QLabel):
         if tree.selectedType() == TreeItem.TYPE_GRID_ITEM:
             self.markGridItem(event.x(),event.y(),event.button())
             return
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             print("FullImage: mousePressEvent",self._drawRectStart)
             if tree.selectedType() is not None:
                 if not self._drawRectStart:
@@ -111,7 +111,7 @@ class FullImage(QLabel):
                     self._rectStartX = self._translateEventToPixel(event.x())
                     self._rectStartY = self._translateEventToPixel(event.y())
     
-    def mouseMoveEvent(self, event: QMouseEvent | None) -> None:
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self._moveStart:
             self._moveDeltaX = event.x() - self._moveStartX
             self._moveDeltaY = event.y() - self._moveStartY
@@ -127,7 +127,7 @@ class FullImage(QLabel):
             pixmap = self._currentImg.copy()
             qp = QPainter(pixmap)
             brush = QBrush(QColor(255,0,0,127))
-            pen = QPen(Qt.red, 2)
+            pen = QPen(Qt.GlobalColor.red, 2)
             qp.setBrush(brush)
             qp.setPen(pen)
             qp.drawRect(
@@ -139,11 +139,11 @@ class FullImage(QLabel):
             self.setPixmap(pixmap)
      
     def mouseReleaseEvent(self, event: QMouseEvent):
-        if event.button() == Qt.MiddleButton:
+        if event.button() == Qt.MouseButton.MiddleButton:
             self._moveStart = False
             self._moveTimer.stop()
             
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self._drawRectStart = False
             print("mouseReleaseEvent",self._rectStartX,self._rectStartY,self._rectEndX,self._rectEndY)
             selectedKey: str = self._myWindow.getTree().selectedLabel()
@@ -167,7 +167,7 @@ class FullImage(QLabel):
                     if self._myWindow.autosave:
                         saveGrids(self._grids)
                 self.drawImage()
-        if event.button() == Qt.RightButton:
+        if event.button() == Qt.MouseButton.RightButton:
             print("right click")
             self.removeRectAt(event.x(),event.y())
             
@@ -264,7 +264,7 @@ class FullImage(QLabel):
         temp = QImage(self._pixmap.toImage())
         ptr = temp.constBits()
         ptr.setsize(temp.byteCount())
-        arr = np.frombuffer(ptr, dtype=np.ubyte).reshape(temp.height(), temp.width(), 4)
+        arr = np.frombuffer(ptr, dtype=np.ubyte).reshape(temp.height(), temp.width(), 4) # type: ignore
         return arr
     
     def fetchData(self,x,y,ex,ey):
@@ -300,12 +300,12 @@ class FullImage(QLabel):
     def drawRectOnScaledImg(self, scaledImg: QPixmap):
         qp = QPainter(scaledImg)
         brush = QBrush(QColor(0,0,255,80))
-        pen = QPen(Qt.blue, 2)
+        pen = QPen(Qt.GlobalColor.blue, 2)
         qp.setBrush(brush)
         qp.setPen(pen)
         self._drawRectOnScaledImg(self._rects, self._rectActive, qp)
         brush = QBrush(QColor(0,255,0,80))
-        pen = QPen(Qt.green, 2)
+        pen = QPen(Qt.GlobalColor.green, 2)
         qp.setBrush(brush)
         qp.setPen(pen)
         self._drawRectOnScaledImg(self._aiRects, self._aiRectActive, qp)
@@ -314,7 +314,7 @@ class FullImage(QLabel):
     def drawGridOnScaledImg(self, scaledImg: QPixmap):
         qp = QPainter(scaledImg)
         brush = QBrush(QColor(0,0,255,80))
-        pen = QPen(Qt.blue, 2)
+        pen = QPen(Qt.GlobalColor.blue, 2)
         qp.setBrush(brush)
         qp.setPen(pen)
         self._drawGridOnScaledImg(self._grids, self._gridsActive, qp, TreeItem.TYPE_GRID_ITEM)
@@ -352,7 +352,7 @@ class FullImage(QLabel):
         
         return (startCol, startRow, endCol, endRow)
         
-    def getGrids(self) -> dict[Grid]:
+    def getGrids(self) -> dict[str,Grid]:
         return self._grids
         
     def _drawGridOnScaledImg(self, grids, gridsActive, qp:QPainter, gridItemType:str, rectSetColor:QColor = QColor(0,255,255,40), rectSetActiveColor:QColor = QColor(0,255,255,127), rectUnsetColor:QColor = QColor(0,0,255,20)):
@@ -438,50 +438,50 @@ class FullImage(QLabel):
         self._aiGridsActive[text] = True
         self.drawImage()
 
-    def activateGrid(self, text):
+    def activateGrid(self, text: str):
         self._gridsActive[text] = True
         self.drawImage()
 
-    def deactivateGrid(self, text):
+    def deactivateGrid(self, text: str):
         self._gridsActive[text] = False
         self.drawImage()
     
-    def appendAIGridRectGroup(self, grid: Grid, text):
+    def appendAIGridRectGroup(self, grid: Grid, text: str):
         grid.addRectGroup(text)
     
-    def appendGridRectGroup(self, grid: Grid, text):
+    def appendGridRectGroup(self, grid: Grid, text: str):
         grid.addRectGroup(text)
     
-    def activateAIGridRectGroup(self, grid: Grid, text):
+    def activateAIGridRectGroup(self, grid: Grid, text: str):
         grid.rectActive(text)
 
-    def deactivateAIGridRectGroup(self, grid: Grid, text):
+    def deactivateAIGridRectGroup(self, grid: Grid, text: str):
         grid.rectDeactive(text)
 
-    def activateGridRectGroup(self, grid: Grid, text):
+    def activateGridRectGroup(self, grid: Grid, text: str):
         grid.rectActive(text)
 
-    def deactivateGridRectGroup(self, grid: Grid, text):
+    def deactivateGridRectGroup(self, grid: Grid, text: str):
         grid.rectDeactive(text)
 
-    def appendRectGroup(self, text):
+    def appendRectGroup(self, text: str):
         self._rects[text] = []
     
-    def activateRectGroup(self, text):
+    def activateRectGroup(self, text: str):
         self._rectActive[text] = True
         self.drawImage()
 
-    def deactivateRectGroup(self, text):
+    def deactivateRectGroup(self, text: str):
         self._rectActive[text] = False
         self.drawImage()
         
-    def appendAIRectGroup(self, text):
+    def appendAIRectGroup(self, text: str):
         self._aiRects[text] = []
     
-    def activateAIRectGroup(self, text):
+    def activateAIRectGroup(self, text: str):
         self._aiRectActive[text] = True
         self.drawImage()
 
-    def deactivateAIRectGroup(self, text):
+    def deactivateAIRectGroup(self, text: str):
         self._aiRectActive[text] = False
         self.drawImage()

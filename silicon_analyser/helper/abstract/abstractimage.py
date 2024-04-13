@@ -62,10 +62,10 @@ class AbstractImage(QLabel):
     def activateAIGrid(self, text):
         raise NotImplementedError()
     
-    def getRects(self) -> list[Rect]:
+    def getRects(self) -> dict[str,Rect]:
         raise NotImplementedError()
     
-    def getGrids(self) -> dict[Grid]:
+    def getGrids(self) -> dict[str,Grid]:
          raise NotImplementedError()
     
     def removeRectGroup(self, label):

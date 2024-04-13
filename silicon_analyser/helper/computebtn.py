@@ -92,9 +92,11 @@ class Worker(QObject):
                 self._plotDlg = plotDlg
             
             def on_epoch_end(self, epoch, logs=None): 
+                if logs is None:
+                    return
                 self._plotDlg.request_graph_update.emit(logs, epoch)
                 if self._plotDlg.isStop():
-                    self.model.stop_training = True
+                    self.model.stop_training = True # type: ignore
             
         class MyThresholdCallback(keras.callbacks.Callback):
             def __init__(self, threshold, patience):
@@ -104,10 +106,12 @@ class Worker(QObject):
                 self.count = 0
 
             def on_epoch_end(self, epoch, logs=None): 
+                if logs is None:
+                    return
                 val_acc = logs["val_accuracy"]
                 if val_acc >= self.threshold:
                     if self.count > self.patience:
-                        self.model.stop_training = True
+                        self.model.stop_training = True # type: ignore
                     else:
                         self.count += 1
                 else:
@@ -122,7 +126,6 @@ class Worker(QObject):
             ignoreRects = self._myWindow.getImage().getAIIgnoreRects()
             self._myWindow.setStatusText("training in progress")
 
-            grid = None        
             if gridMode:
                 grid: Grid = self._myWindow.getTree().getSelectedGrid()
                 maxW, maxH, labels, countGroups, MP, train, vals = self.initTrainAndValsForGrid(grid)

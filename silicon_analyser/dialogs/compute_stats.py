@@ -1,3 +1,4 @@
+import typing
 from PyQt5 import uic
 from PyQt5 import QtGui
 from PyQt5.QtCore import pyqtSignal
@@ -9,10 +10,10 @@ import os.path as p
 class ComputeStatsDlg(QDialog):
     _lossgraph: PlotWidget
     _accuracygraph: PlotWidget
-    _loss: any
-    _val_loss: any
-    _accuracy: any
-    _val_accuracy: any
+    _loss: typing.Any
+    _val_loss: typing.Any
+    _accuracy: typing.Any
+    _val_accuracy: typing.Any
     _lblStatus: QLabel
     _btnStop: QPushButton
     request_graph_update = pyqtSignal([dict,int])

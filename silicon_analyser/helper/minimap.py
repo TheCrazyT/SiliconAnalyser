@@ -31,7 +31,7 @@ class MiniMap(QLabel):
         posX, posY = self._myWindow.getPos()
         scale = self._myWindow.getScale()
         qp = QPainter(minimapPm)
-        pen = QPen(Qt.red, 2)
+        pen = QPen(Qt.GlobalColor.red, 2)
         qp.setPen(pen)
         sc1x = self.scaleMinimapX()
         sc2x = sc1x/scale

@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, uic
+from PyQt5 import QtCore, QtGui, uic
 from PyQt5.QtCore import Qt, QItemSelection
 from PyQt5.QtWidgets import QFileDialog, QTableView, QStatusBar, QAction, QPushButton
 from PyQt5.QtGui import QPixmap, QStandardItem, QStandardItemModel
@@ -30,7 +30,7 @@ class MyWindow(AbstractMyWindow):
     _statusBar: QStatusBar
     _minimap: MiniMap
     _image: FullImage
-    _models: dict
+    _models: dict[str,object]
     _actionGridAddRowTop: QAction
     _actionSaveModel: QAction
     _actionLoadModel: QAction
@@ -43,7 +43,8 @@ class MyWindow(AbstractMyWindow):
     
     def __init__(self):
         AbstractMyWindow.__init__(self)
-        uic.loadUi(p.abspath(p.join(p.dirname(__file__), '.')) + '/main_window.ui', self)
+        path: str = p.abspath(p.join(p.dirname(__file__), '.')) + '/main_window.ui'
+        uic.loadUi(path, self)
         tree: Tree = self._tree
         properties: QTableView = self._properties
                 
@@ -53,14 +54,14 @@ class MyWindow(AbstractMyWindow):
         self._propertiesUtil = PropertiesUtil(self,self._properties)
         
         self._treeManualItem = QStandardItem("Manual")
-        self._treeManualItem.setFlags(QtCore.Qt.ItemIsUserCheckable |
-                          QtCore.Qt.ItemIsEnabled)
-        self._treeManualItem.setCheckState(QtCore.Qt.Unchecked)
+        self._treeManualItem.setFlags(self._treeManualItem.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable |
+                          QtCore.Qt.ItemFlag.ItemIsEnabled)
+        self._treeManualItem.setCheckState(QtCore.Qt.CheckState.Unchecked)
         self._treeModel.appendRow(self._treeManualItem)
         self._treeAIItem = QStandardItem("AI")
-        self._treeAIItem.setFlags(QtCore.Qt.ItemIsUserCheckable |
-                          QtCore.Qt.ItemIsEnabled)
-        self._treeAIItem.setCheckState(QtCore.Qt.Unchecked)
+        self._treeAIItem.setFlags(self._treeAIItem.flags() |QtCore.Qt.ItemFlag.ItemIsUserCheckable |
+                          QtCore.Qt.ItemFlag.ItemIsEnabled)
+        self._treeAIItem.setCheckState(QtCore.Qt.CheckState.Unchecked)
         self._treeModel.appendRow(self._treeAIItem)
         tree.setModel(self._treeModel)
         self._models = {}
@@ -106,14 +107,14 @@ class MyWindow(AbstractMyWindow):
                     self.getTree().addTreeItem(k)
                 image.loadRects(rects)
         if p.isfile(silicon_analyser.savefiles.SAVE_GRIDS):
-            grids: dict[Grid] = loadGrids()
+            grids: dict[str, Grid] = loadGrids()
             for gridKey in grids.keys():
                 grid, parentTreeItem = self.getTree().addTreeItem(gridKey,TreeItem.TYPE_GRID)
                 for gridItemKey in grids[gridKey].getLabels():
                     _, treeItem = self.getTree().addTreeItem(gridItemKey,TreeItem.TYPE_GRID_ITEM, grid, parentTreeItem)
                     text = treeItem.data(TreeItem.TEXT)
                     if(not grids[gridKey]._rectsActive[text]):
-                        treeItem.setCheckState(QtCore.Qt.Unchecked)
+                        treeItem.setCheckState(QtCore.Qt.CheckState.Unchecked)
             image.loadGrids(grids)
         
         image.drawImage()
@@ -121,7 +122,7 @@ class MyWindow(AbstractMyWindow):
         
     def treeSelectionChanged(self, selection: QItemSelection):
         tree: Tree = self._tree
-        selectedType: str = tree.selectedType()
+        selectedType: str|None = tree.selectedType()
         computeBtn: ComputeBtn = self._computeBtn
         addLabelBtn: AddLabelBtn = self._addLabelBtn
         if((selectedType == TreeItem.TYPE_GRID_ITEM)
@@ -135,9 +136,9 @@ class MyWindow(AbstractMyWindow):
             computeBtn.setDisabled(True)
             addLabelBtn.setDisabled(True)
 
-    def openMainUrl(self):
+    def openMainUrl(self) -> None:
         import webbrowser
-        return webbrowser.open('https://github.com/TheCrazyT/SiliconAnalyser')
+        webbrowser.open('https://github.com/TheCrazyT/SiliconAnalyser')
         
     def getModel(self, name):
         if name in self._models:
@@ -204,20 +205,20 @@ class MyWindow(AbstractMyWindow):
     def reloadPropertyWindow(self, selection: QItemSelection):
         return self._propertiesUtil.reloadPropertyWindow(selection)
     
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, keyEvent: QtGui.QKeyEvent):
         c = 10
-        if event.modifiers() & Qt.ShiftModifier:
+        if keyEvent.modifiers() == Qt.KeyboardModifier.ShiftModifier:
             c = 100
-        if event.key() == Qt.Key_Left:
+        if keyEvent.key() == Qt.Key.Key_Left:
             self._posX -= c
             self._posX = max(self._posX,0)
-        if event.key() == Qt.Key_Right:
+        if keyEvent.key() == Qt.Key.Key_Right:
             self._posX += c
             self._posX = min(self._posX,self._pixmap.width())
-        if event.key() == Qt.Key_Up:
+        if keyEvent.key() == Qt.Key.Key_Up:
             self._posY -= c
             self._posY = max(self._posY,0)
-        if event.key() == Qt.Key_Down:
+        if keyEvent.key() == Qt.Key.Key_Down:
             self._posY += c
             self._posY = min(self._posY,self._pixmap.height())
         self.drawImgAndMinimap()
