@@ -1,4 +1,6 @@
+import os
 import numpy as np
+os.environ["KERAS_BACKEND"] = "torch"
 import keras
 from silicon_analyser.grid import Grid, getAllCellRects
 from silicon_analyser.helper.abstract.abstractimage import AbstractImage
