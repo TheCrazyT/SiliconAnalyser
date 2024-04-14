@@ -9,6 +9,7 @@ from silicon_analyser.helper.abstract.abstracttreehelper import AbstractTreeHelp
 from silicon_analyser.helper.abstract.abstractimage import AbstractImage
 from silicon_analyser.treeitem import TreeItem
 from silicon_analyser.grid import Grid
+from silicon_analyser.dialogs.pixel_image import PixelImageDlg
 
 class Tree(AbstractTreeHelper):
     _myWindow: AbstractMyWindow
@@ -18,6 +19,8 @@ class Tree(AbstractTreeHelper):
     _actionRemoveGrid: QAction
     _actionRemoveLabel: QAction
     _actionSaveAsCsv: QAction
+    _actionViewAsPixelimage: QAction
+    _pixelImageDlg: PixelImageDlg
     evtTreeSelectionChanged: pyqtSignal = pyqtSignal(QItemSelection)
 
     def __init__(self, parent: QWidget | None = ...) -> None: # type: ignore
@@ -32,18 +35,37 @@ class Tree(AbstractTreeHelper):
         self._actionRemoveGrid = self._myWindow._actionRemoveGrid
         self._actionRemoveLabel = self._myWindow._actionRemoveLabel
         self._actionSaveAsCsv = self._myWindow._actionSaveAsCsv
+        self._actionViewAsPixelimage = self._myWindow._actionViewAsPixelimage
         self.addAction(self._actionGridAddRowTop)
         self.addAction(self._actionSaveModel)
         self.addAction(self._actionLoadModel)
         self.addAction(self._actionRemoveGrid)
         self.addAction(self._actionRemoveLabel)
         self.addAction(self._actionSaveAsCsv)
+        self.addAction(self._actionViewAsPixelimage)
         self._actionGridAddRowTop.triggered.connect(self.addTopRow)
         self._actionSaveModel.triggered.connect(self.saveModel)
         self._actionLoadModel.triggered.connect(self.loadModel)
         self._actionRemoveGrid.triggered.connect(self.removeGrid)
         self._actionRemoveLabel.triggered.connect(self.removeLabel)
         self._actionSaveAsCsv.triggered.connect(self.saveAsCsv)
+        self._actionViewAsPixelimage.triggered.connect(self.viewAsPixelimage)
+        self._pixelImageDlg = PixelImageDlg()
+    
+    def viewAsPixelimage(self, *args, **kwargs):
+        print("viewAsPixelimage")
+        grid: Grid|None
+        selectedType = self.selectedType()
+        if selectedType == TreeItem.TYPE_GRID_ITEM:
+            grid = self.getSelectedGrid()
+        elif selectedType == TreeItem.TYPE_AI_GRID_ITEM:
+            grid = self.getSelectedAIGrid()
+        if grid is None:
+            return
+        label = self.selectedLabel()
+        if label is not None: 
+            self._pixelImageDlg.show()
+            self._pixelImageDlg.drawRects(grid.getRects(label))
     
     def saveAsCsv(self, *args, **kwargs):
         print("saveAsCsv")
@@ -63,12 +85,17 @@ class Tree(AbstractTreeHelper):
                 for r in range(0,grid.rows):
                     cells = []
                     for c in range(0,grid.cols):
+                        labelFound = False
                         for l in grid.getLabels():
                             if grid.isRectSet(c,r,l):
+                                labelFound = True
                                 if l.isnumeric():
                                     cells.append(f'{l}')
                                 else:
                                     cells.append(f'"{l}"')
+                                break
+                        if not labelFound:
+                            cells.append(f'')
                     f.write(",".join(cells))
                     f.write("\n")
     
@@ -190,6 +217,10 @@ class Tree(AbstractTreeHelper):
             self._actionRemoveLabel.setVisible(True)
         else:
             self._actionRemoveLabel.setVisible(False)
+        if(selectedType == TreeItem.TYPE_AI_GRID_ITEM) or (selectedType == TreeItem.TYPE_GRID_ITEM):
+            self._actionViewAsPixelimage.setVisible(True)
+        else:
+            self._actionViewAsPixelimage.setVisible(False)
         if(selectedType == TreeItem.TYPE_GRID_ITEM):
             myWindow.getImage().drawImage()
         if(selectedType == TreeItem.TYPE_AI_GRID_ITEM):
@@ -309,6 +340,8 @@ class Tree(AbstractTreeHelper):
         if selectedItem is None:
             return
         type = selectedItem.data(TreeItem.TYPE)
+        if type == TreeItem.TYPE_AI_GRID_ITEM:
+            return selectedItem.parent().data(TreeItem.OBJECT)
         return None if type != TreeItem.TYPE_AI_GRID else selectedItem.data(TreeItem.OBJECT)
     
     def isItemSelected(self, rectLabel, gridName, gridItemType) -> bool:

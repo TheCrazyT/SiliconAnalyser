@@ -44,11 +44,18 @@ Frameworks/Libraries used:
     * "acc" stands for "accuracy", "val" for "validation"
 * found ai-cells will be drawn green
 
+# Keys
+
+* Use up/down/left/right to navigate
+* Hold shift to move faster
+* Scroll-wheel to zoom out
+* Click on minimap to get directly to a position
+
 ![image](https://raw.githubusercontent.com/TheCrazyT/SiliconAnalyser/main/docs/small_tutorial.gif)
 
 # TODO
 
-* export of ai-cells as bit-image
 * auto-compute to calculate in background while you are selecting new cells for your labels
+* ai-model configuration
 * possibility to rotate grid
 * maybe store your model on a public place? (for others to use)

@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QLabel, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap, QColor, QMouseEvent, QPainter, QPen, QBrush
 import numpy as np
 from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
-from silicon_analyser.savefiles import saveGrids,saveRects
+from silicon_analyser.savefiles import triggerSaveGrids, triggerSaveRects, saveGrids, saveRects
 from silicon_analyser.grid import Grid
 from silicon_analyser.rect import Rect
 from silicon_analyser.treeitem import TreeItem
@@ -21,6 +21,7 @@ class FullImage(QLabel):
     _moveDeltaX: int
     _moveDeltaY: int
     _moveTimer: QTimer
+    _saveTimer: QTimer
     
     def __init__(self, parent):
         QLabel.__init__(self, parent)
@@ -43,7 +44,15 @@ class FullImage(QLabel):
         self._moveTimer.timeout.connect(self.moveUpdate)
         self._moveTimer.setInterval(int(1000 * 0.2))
         self._moveStart = False
+        self._saveTimer = QTimer()
+        self._saveTimer.timeout.connect(self.doSave)
+        self._saveTimer.setInterval(int(1000 * 10)) #save every 10 seconds
+        self._saveTimer.start()
     
+    def doSave(self):
+        saveRects(self._rects)
+        saveGrids(self._grids)
+        
     def moveUpdate(self):
         posX, posY = self._myWindow.getPos()
         posX += self._moveDeltaX
@@ -90,7 +99,7 @@ class FullImage(QLabel):
                     if button == Qt.MouseButton.RightButton:
                         grid.unsetRect(int((tevx - (grid.x - posX))/(grid.width/grid.cols)),int((tevy - (grid.y - posY))/(grid.height/grid.rows)), self._myWindow.getTree().selectedLabel())
                     if self._myWindow.autosave:
-                        saveGrids(self._grids)
+                        triggerSaveGrids()
                     
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.MiddleButton:
@@ -165,7 +174,7 @@ class FullImage(QLabel):
                     print(f"grid resized: {id(grid)}")
                     self._myWindow.reloadProperyWindowByGrid(grid)
                     if self._myWindow.autosave:
-                        saveGrids(self._grids)
+                        triggerSaveGrids()
                 self.drawImage()
         if event.button() == Qt.MouseButton.RightButton:
             print("right click")
@@ -232,13 +241,13 @@ class FullImage(QLabel):
                 
         self.drawImage()
         if  self._myWindow.autosave:
-            saveRects(self._rects)
-            saveGrids(self._grids)
+            triggerSaveRects()
+            triggerSaveGrids()
 
     def appendRect(self,key,x,y,ex,ey):
         self._appendRect(key, self._rects, x, y, ex, ey)
         if self._myWindow.autosave:
-            saveRects(self._rects)
+            triggerSaveRects()
 
     def _appendRect(self, key, rects, x, y, ex, ey, ignorePos = False):
         if ignorePos:
@@ -431,7 +440,7 @@ class FullImage(QLabel):
         self._grids[text] = grid
         self._myWindow.reloadProperyWindowByGrid(grid)
         if self._myWindow.autosave:
-            saveGrids(self._grids)
+            triggerSaveGrids()
         return self._grids[text]
     
     def activateAIGrid(self, text):

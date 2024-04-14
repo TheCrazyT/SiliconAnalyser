@@ -39,6 +39,7 @@ class MyWindow(AbstractMyWindow):
     _actionMade_by_TheCrazyT: QAction
     _actionUrl: QAction
     _actionSaveAsCsv: QAction
+    _actionViewAsPixelimage: QAction
     autosave: bool
     
     def __init__(self):

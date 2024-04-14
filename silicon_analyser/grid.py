@@ -86,7 +86,9 @@ class Grid:
                 if r in self._rects[k]:
                     return True
         return False
-    
+
+    def getRects(self, key: str) -> list[list[int]]:
+        return self._rects[key]
     
 def getAllCellRects(grid: Grid):
     cellRects = []

@@ -206,6 +206,11 @@
     <string>Save as csv</string>
    </property>
   </action>
+  <action name="_actionViewAsPixelimage">
+   <property name="text">
+    <string>View as pixelimage</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

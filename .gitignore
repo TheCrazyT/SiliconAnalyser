@@ -9,4 +9,5 @@ build
 bak
 samples
 silicon_analyser.egg-info
+buildAndDeploy.bat
 TODO.txt
