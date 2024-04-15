@@ -374,32 +374,39 @@ class FullImage(QLabel):
                 cellWidth = grid.width / grid.cols
                 cellHeight = grid.height / grid.rows
                 startCol, startRow, endCol, endRow = self.calcGridCellsVisibleRange(grid)
-                #for col in range(0,grid.cols):
-                #    for row in range(0,grid.rows):
-                for col in range(startCol,endCol):
-                    for row in range(startRow,endRow):
-                        ox = grid.x + col * cellWidth
-                        oy = grid.y + row * cellHeight
-                        ex = ox + cellWidth
-                        ey = oy + cellHeight
-                        x = int(self._translatePixelToScaled(ox)-sposX)
-                        y = int(self._translatePixelToScaled(oy)-sposY)
-                        ex = int(self._translatePixelToScaled(ex)-sposX)
-                        ey = int(self._translatePixelToScaled(ey)-sposY)
-                        w = ex - x
-                        h = ey - y
-                        if x>=0 and y>=0 and x<=self.width() and y<=self.height():
-                            if grid.isRectSet(col,row):
-                                rectLabel = grid.rectLabel(col, row)
-                                if self._myWindow.getTree().isItemSelected(rectLabel, grid.name, gridItemType):
-                                    brush = QBrush(rectSetActiveColor)
-                                else:
-                                    brush = QBrush(rectSetColor)
-                                qp.setBrush(brush)
-                            else:
-                                brush = QBrush(rectUnsetColor)
-                                qp.setBrush(brush)
-                            qp.drawRect(x,y,w,h)
+                for row in range(startRow,endRow):
+                    if not self._drawGridOnScaledImgRow(qp, gridItemType, rectSetColor, rectSetActiveColor, rectUnsetColor, sposX, sposY, grid, cellWidth, cellHeight, startCol, endCol, row):
+                        break
+
+    def _drawGridOnScaledImgRow(self, qp:QPainter, gridItemType:str, rectSetColor:QColor, rectSetActiveColor:QColor, rectUnsetColor:QColor, sposX:float, sposY:float, grid:Grid, cellWidth:float, cellHeight:float, startCol:int, endCol:int, row:int):
+        oy = grid.y + row * cellHeight
+        y = int(self._translatePixelToScaled(oy)-sposY)
+        if y >= self.height():
+            return False
+        for col in range(startCol,endCol):
+            ox = grid.x + col * cellWidth
+            ex = ox + cellWidth
+            ey = oy + cellHeight
+            x = int(self._translatePixelToScaled(ox)-sposX)
+            if x > self.width():
+                break
+            ex = int(self._translatePixelToScaled(ex)-sposX)
+            ey = int(self._translatePixelToScaled(ey)-sposY)
+            w = ex - x
+            h = ey - y
+            if x>=0 and y>=0 and x<=self.width() and y<=self.height():
+                if grid.isRectSet(col,row):
+                    rectLabel = grid.rectLabel(col, row)
+                    if self._myWindow.getTree().isItemSelected(rectLabel, grid.name, gridItemType):
+                        brush = QBrush(rectSetActiveColor)
+                    else:
+                        brush = QBrush(rectSetColor)
+                    qp.setBrush(brush)
+                else:
+                    brush = QBrush(rectUnsetColor)
+                    qp.setBrush(brush)
+                qp.drawRect(x,y,w,h)
+        return True
                         
     def _drawRectOnScaledImg(self, rects, rectActive, qp:QPainter):
         posX, posY = self._myWindow.getPos()

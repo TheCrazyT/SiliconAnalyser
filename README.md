@@ -11,6 +11,7 @@ Install from pip:
 # Information
 
 Code will use your graphic card for acceleration.
+(but only if correct pytorch is installed, see "Additional info" below)
 
 Frameworks/Libraries used:
 * [PyQt5](https://www.riverbankcomputing.com/software/pyqt/)
@@ -44,17 +45,24 @@ Frameworks/Libraries used:
     * "acc" stands for "accuracy", "val" for "validation"
 * found ai-cells will be drawn green
 
+# Additional info
+
+* you might need to install cuda-specific [PyTorch](https://pytorch.org/get-started/previous-versions/#linux-and-windows-4) for accelerated computing
+    * check your graphic driver version for compatible cuda version!
+
 # Keys
 
 * Use up/down/left/right to navigate
 * Hold shift to move faster
 * Scroll-wheel to zoom out
 * Click on minimap to get directly to a position
+* Right click on tree-items (left navigation menu) for additional options
 
 ![image](https://raw.githubusercontent.com/TheCrazyT/SiliconAnalyser/main/docs/small_tutorial.gif)
 
 # TODO
 
+* show loading screen on start (pytorch with cuda support takes a bit to load)
 * auto-compute to calculate in background while you are selecting new cells for your labels
 * ai-model configuration
 * possibility to rotate grid

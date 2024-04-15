@@ -275,7 +275,10 @@ class Tree(AbstractTreeHelper):
         if type == TreeItem.TYPE_GRID_ITEM:
             selectedItem = self.getSelectedItem()
             if selectedItem is not None:
-                treeItem: QStandardItem = selectedItem.parent()
+                if selectedItem.data(TreeItem.TYPE) == TreeItem.TYPE_GRID:
+                    treeItem: QStandardItem = selectedItem 
+                else:
+                    treeItem: QStandardItem = selectedItem.parent()
         if type == TreeItem.TYPE_AI_GRID_ITEM:
             selectedItem = self.getSelectedItem()
             if selectedItem is not None:

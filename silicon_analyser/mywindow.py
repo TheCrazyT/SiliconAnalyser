@@ -1,6 +1,8 @@
+import torch
+import importlib.metadata
 from PyQt5 import QtCore, QtGui, uic
 from PyQt5.QtCore import Qt, QItemSelection
-from PyQt5.QtWidgets import QFileDialog, QTableView, QStatusBar, QAction, QPushButton
+from PyQt5.QtWidgets import QFileDialog, QMenu, QTableView, QStatusBar, QAction
 from PyQt5.QtGui import QPixmap, QStandardItem, QStandardItemModel
 from os import path as p
 import sys
@@ -41,6 +43,7 @@ class MyWindow(AbstractMyWindow):
     _actionSaveAsCsv: QAction
     _actionViewAsPixelimage: QAction
     autosave: bool
+    menuBar: QMenu
     
     def __init__(self):
         AbstractMyWindow.__init__(self)
@@ -70,7 +73,7 @@ class MyWindow(AbstractMyWindow):
 
         if(len(sys.argv) < 2):
             dlg = QFileDialog()
-            filenames = dlg.getOpenFileName(caption="Load image",filter="Image (*.png;*.jpg;*.bmp;*.gif)",initialFilter="Trained model (*.h5)")
+            filenames = dlg.getOpenFileName(caption="Load image",filter="Image (*.png;*.jpg;*.bmp;*.gif)",initialFilter="Image (*.png;*.jpg;*.bmp;*.gif)")
             if(len(filenames) >= 1):
                 self._pixmap = QPixmap(filenames[0])
         else:
@@ -120,6 +123,16 @@ class MyWindow(AbstractMyWindow):
         
         image.drawImage()
         self.autosave = True
+        if(torch.cuda.is_available()):
+            self.setSuccessStatus("CUDA successfully initialized")
+        else:
+            self.setSuccessStatus("CUDA not found")
+        
+        menuBar: QMenu = self.menuBar    
+
+        version = importlib.metadata.version("silicon-analyser")
+        action = menuBar.addAction(f"Version: {version}")
+        action.triggered.connect(self.openMainUrl)
         
     def treeSelectionChanged(self, selection: QItemSelection):
         tree: Tree = self._tree
@@ -165,9 +178,21 @@ class MyWindow(AbstractMyWindow):
 
     def imageHeight(self):
         return self.getImage().height()
+
+    def setSuccessStatus(self, text):
+        statusBar: QStatusBar = self._statusBar
+        statusBar.setStyleSheet('background-color: #0ff000')
+        statusBar.showMessage(text)
+
+    def setErrorStatus(self, text):
+        statusBar: QStatusBar = self._statusBar
+        statusBar.setStyleSheet('background-color: #ff0000')
+        statusBar.showMessage(text)
             
     def setStatusText(self, text):
-        self._statusBar.showMessage(text)
+        statusBar: QStatusBar = self._statusBar
+        statusBar.setStyleSheet('')
+        statusBar.showMessage(text)
         
     def getTree(self) -> AbstractTreeHelper:
         return self._tree

@@ -148,6 +148,7 @@
     </property>
     <addaction name="_actionMade_by_TheCrazyT"/>
     <addaction name="_actionUrl"/>
+    <addaction name="separator"/>
    </widget>
    <addaction name="menuInfo"/>
   </widget>

@@ -57,8 +57,9 @@ class Grid:
         r = [col, row]
         if label not in self._rects:
             self._rects[label] = []
-        if r in self._rects[label]:
-            self._rects[label].remove(r)
+        for lbl in self._rects.keys():
+            if r in self._rects[lbl]:
+                self._rects[lbl].remove(r)
         self._rects[label].append(r)
         
     def unsetRect(self, col, row, label):
