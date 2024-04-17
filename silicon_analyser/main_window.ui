@@ -212,6 +212,11 @@
     <string>View as pixelimage</string>
    </property>
   </action>
+  <action name="_actionExportCellsToImages">
+   <property name="text">
+    <string>Export cells to images</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

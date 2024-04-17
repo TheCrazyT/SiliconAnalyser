@@ -23,8 +23,7 @@ class PropertiesUtil:
         nameCol = model.item(row,0)
         name = nameCol.data(Qt.ItemDataRole.DisplayRole)
         value = valueCol.data(Qt.ItemDataRole.DisplayRole)
-        print(name)
-        print(value)
+        print(f"{name}: {value}")
         grid: Grid = self._myWindow.getTree().getSelectedGrid()
         if(name == "cols"):
             grid.cols = int(value)
@@ -36,8 +35,14 @@ class PropertiesUtil:
             grid.y = int(value)
         if(name == "width"):
             grid.width = int(value)
+            grid.recalcCell()
         if(name == "height"):
             grid.height = int(value)
+            grid.recalcCell()
+        if(name == "shearX"):
+            grid.shearX = float(value)
+        if(name == "shearY"):
+            grid.shearY = float(value)
         self._myWindow.getImage().drawImage()
         saveGrids(self._myWindow.getImage().getGrids())
     
@@ -56,7 +61,7 @@ class PropertiesUtil:
             grid: Grid = sel.indexes()[0].data(TreeItem.OBJECT)
             self.reloadProperyWindowByGrid(grid)
 
-    def reloadProperyWindowByGrid(self, grid):
+    def reloadProperyWindowByGrid(self, grid: Grid):
         table: QTableView = self._properties
         model: QStandardItemModel = typing.cast(QStandardItemModel, table.model())
         rowPosition = model.rowCount()
@@ -75,5 +80,9 @@ class PropertiesUtil:
             model.insertRow(rowPosition,[QStandardItem("width"),QStandardItem(f"{grid.width}")])
             rowPosition = model.rowCount()
             model.insertRow(rowPosition,[QStandardItem("height"),QStandardItem(f"{grid.height}")])
+            rowPosition = model.rowCount()
+            model.insertRow(rowPosition,[QStandardItem("shearX"),QStandardItem(f"{grid.shearX}")])
+            rowPosition = model.rowCount()
+            model.insertRow(rowPosition,[QStandardItem("shearY"),QStandardItem(f"{grid.shearY}")])
 
   

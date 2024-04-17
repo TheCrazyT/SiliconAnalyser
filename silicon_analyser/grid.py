@@ -9,9 +9,30 @@ class Grid:
         self.rows = rows
         self.width = width
         self.height = height
+        self.shearX = 0
+        self.shearY = 0
         self._rects = {}
         self._rectsActive = {}
+        self.recalcCell()
         print(f"init grid:{id(self)}")
+    
+    def recalcCell(self):
+        self._cellWidth = self.width / self.cols
+        self._cellHeight = self.height / self.rows
+    
+    def getCellWidth(self) -> float:
+        return self._cellWidth
+
+    def getCellHeight(self) -> float:
+        return self._cellHeight
+    
+    def absX(self, col:int, row:int) -> int:
+        w = self._cellWidth
+        return int(self.x + col*w + self.shearX*row)
+
+    def absY(self, row:int, col:int) -> int:
+        h = self._cellHeight
+        return int(self.y + row*h + self.shearY*col)
     
     def replaceValues(self,grid):
         self.x = grid.x
@@ -21,6 +42,10 @@ class Grid:
         self.width = grid.width
         self.height = grid.height
         self._rects = grid._rects
+        self._cellHeight = grid._cellHeight
+        self._cellWidth = grid._cellWidth
+        self.shearX = grid.shearX
+        self.shearY = grid.shearY
         for k in self._rects:
             for cx,cy in list(self._rects[k]):
                 if cx < 0 or cy < 0:

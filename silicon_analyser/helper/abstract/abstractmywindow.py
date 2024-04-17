@@ -13,6 +13,7 @@ class AbstractMyWindow(QMainWindow):
     _actionRemoveLabel: QAction
     _actionSaveAsCsv: QAction
     _actionViewAsPixelimage: QAction
+    _actionExportCellsToImages: QAction
     autosave: bool
     def __init__(self):
         QMainWindow.__init__(self)

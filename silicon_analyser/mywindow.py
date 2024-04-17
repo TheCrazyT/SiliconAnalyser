@@ -42,6 +42,7 @@ class MyWindow(AbstractMyWindow):
     _actionUrl: QAction
     _actionSaveAsCsv: QAction
     _actionViewAsPixelimage: QAction
+    _actionExportCellsToImages: QAction
     autosave: bool
     menuBar: QMenu
     

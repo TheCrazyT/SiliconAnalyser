@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = "silicon-analyser"
-version = "1.0.6"
+version = "1.0.7"
 authors = [
   { name="CrazyT", email="crazyt2019+sa@gmail.com" },
 ]
@@ -19,6 +19,7 @@ description = "helps to analyse integrated circuit die images (for example from 
 dependencies = [
   "torch",
   "numpy",
+  "pillow",
   "keras",
   "PyQt5",
   "pyqtgraph",

@@ -29,6 +29,14 @@ class JSONGridDecoder(JSONDecoder):
             g: Grid = Grid(name, x , y, cols, rows, width, height)
             g._rects = item["_rects"]
             g._rectsActive = item["_rectsActive"]
+            if "shearX" in item:
+                g.shearX = item["shearX"]
+            else:
+                g.shearX = 0
+            if "shearY" in item:
+                g.shearY = item["shearY"]
+            else:
+                g.shearY = 0
             grids[gridName] = g
         return grids
         

@@ -146,7 +146,7 @@ class Worker(QObject):
             print("train.shape",train.shape)
             print("vals.shape",vals.shape)
             
-            xtraining, ytraining, xvalidation, yvalidation = train_test_split(train,vals,test_size=0.1) 
+            xtraining, ytraining, xvalidation, yvalidation = train_test_split(train,vals,shuffle = True,test_size=0.1) 
 
             history = model_train.fit(
                 x = xtraining,
@@ -173,7 +173,8 @@ class Worker(QObject):
             self._computeStatsDlg.setError(e)
         finally:
             self.finished.emit()
-        
+    
+    # TODO: maybe deprecated, not shure yet
     def initTrainAndValsForRects(self, rects, ignoreRects):
         maxW = 0
         maxH = 0
@@ -201,7 +202,7 @@ class Worker(QObject):
         print("vals.shape:",vals.shape)
         return maxW, maxH, countGroups, MP, train, vals
 
-    def initTrainAndValsForGrid(self, grid:Grid):
+    def initTrainAndValsForGrid(self, grid:Grid) -> tuple[int, int, list[str], int, int, np.ndarray, np.ndarray]:
         labels = grid.getLabels()
         countGroups = len(labels)
         cntTotal = 0
@@ -221,8 +222,9 @@ class Worker(QObject):
         vals = np.zeros(shape=(cntTotal,countGroups),dtype=np.float32)
         print("train.shape:",train.shape)
         print("vals.shape:",vals.shape)
-        return maxW, maxH, labels, countGroups, MP, train, vals
+        return  maxW, maxH, labels, countGroups, MP, train, vals
 
+    # TODO: maybe deprecated, not shure yet
     def prepareRectData(self, rects, countGroups, ignoreRects, maxW, maxH, train, vals):
         self._myWindow.getTree().clearAIItem()
         i = 0

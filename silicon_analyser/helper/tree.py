@@ -1,4 +1,7 @@
+from PIL import Image
 import typing
+import numpy as np
+import re
 from PyQt5.QtCore import QItemSelection, pyqtSignal, QItemSelectionModel
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QTreeView, QWidget, QAction, QFileDialog
@@ -20,6 +23,7 @@ class Tree(AbstractTreeHelper):
     _actionRemoveLabel: QAction
     _actionSaveAsCsv: QAction
     _actionViewAsPixelimage: QAction
+    _actionExportCellsToImages: QAction
     _pixelImageDlg: PixelImageDlg
     evtTreeSelectionChanged: pyqtSignal = pyqtSignal(QItemSelection)
 
@@ -36,6 +40,7 @@ class Tree(AbstractTreeHelper):
         self._actionRemoveLabel = self._myWindow._actionRemoveLabel
         self._actionSaveAsCsv = self._myWindow._actionSaveAsCsv
         self._actionViewAsPixelimage = self._myWindow._actionViewAsPixelimage
+        self._actionExportCellsToImages = self._myWindow._actionExportCellsToImages
         self.addAction(self._actionGridAddRowTop)
         self.addAction(self._actionSaveModel)
         self.addAction(self._actionLoadModel)
@@ -43,6 +48,7 @@ class Tree(AbstractTreeHelper):
         self.addAction(self._actionRemoveLabel)
         self.addAction(self._actionSaveAsCsv)
         self.addAction(self._actionViewAsPixelimage)
+        self.addAction(self._actionExportCellsToImages)
         self._actionGridAddRowTop.triggered.connect(self.addTopRow)
         self._actionSaveModel.triggered.connect(self.saveModel)
         self._actionLoadModel.triggered.connect(self.loadModel)
@@ -50,8 +56,34 @@ class Tree(AbstractTreeHelper):
         self._actionRemoveLabel.triggered.connect(self.removeLabel)
         self._actionSaveAsCsv.triggered.connect(self.saveAsCsv)
         self._actionViewAsPixelimage.triggered.connect(self.viewAsPixelimage)
+        self._actionExportCellsToImages.triggered.connect(self.exportCellsToImages)
         self._pixelImageDlg = PixelImageDlg()
     
+    def exportCellsToImages(self, *args, **kwargs):
+        print("exportCellsToImages")
+        grid: Grid|None = self.getSelectedGrid()
+        if grid is None:
+            return
+        dlg: QFileDialog = QFileDialog()
+        dlg.setLabelText(QFileDialog.DialogLabel.Accept, "Save")
+        directoryPath: str = dlg.getExistingDirectory()
+        if directoryPath is not None:
+            for label in grid.getLabels():
+                for rect in grid.getRects(label):
+                  x, y = rect[0:2]
+                  w = grid.width / grid.cols
+                  h = grid.height / grid.rows
+                  img: AbstractImage = self._myWindow.getImage()
+                  arr = img.fetchData(grid.absX(x,y),grid.absY(y,x),int(grid.absX(x,y)+w),int(grid.absY(y,x)+h))
+                  clean_label = re.sub("[^A-Za-z0-9]","_",label)
+                  imgArr = np.zeros(arr.shape,np.uint8)
+                  imgArr[:,:,0] = arr[:,:,2]
+                  imgArr[:,:,1] = arr[:,:,1]
+                  imgArr[:,:,2] = arr[:,:,0]
+                  imgToSave = Image.fromarray(imgArr)
+                  imgToSave.save(f"{directoryPath}/{clean_label}_{x:03}_{y:03}.png","PNG")
+        print("exportCellsToImages done")
+
     def viewAsPixelimage(self, *args, **kwargs):
         print("viewAsPixelimage")
         grid: Grid|None
@@ -202,9 +234,11 @@ class Tree(AbstractTreeHelper):
         if(selectedType == TreeItem.TYPE_GRID):
             self._actionRemoveGrid.setVisible(True)
             self._actionSaveAsCsv.setVisible(True)
+            self._actionExportCellsToImages.setVisible(True)
         else:
             self._actionRemoveGrid.setVisible(False)
             self._actionSaveAsCsv.setVisible(False)
+            self._actionExportCellsToImages.setVisible(False)
         if(selectedType == TreeItem.TYPE_AI_GRID):
             self._actionSaveAsCsv.setVisible(True)
         else:

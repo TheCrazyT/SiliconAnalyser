@@ -2,11 +2,11 @@
 
 Install from source:
 
-`pip install .`
+`pip install --upgrade .`
 
 Install from pip:
 
-`pip install silicon-analyser`
+`pip install --upgrade silicon-analyser`
 
 # Information
 
@@ -63,6 +63,7 @@ Frameworks/Libraries used:
 # TODO
 
 * show loading screen on start (pytorch with cuda support takes a bit to load)
+* option to calculate/classify by decision tree
 * auto-compute to calculate in background while you are selecting new cells for your labels
 * ai-model configuration
 * possibility to rotate grid

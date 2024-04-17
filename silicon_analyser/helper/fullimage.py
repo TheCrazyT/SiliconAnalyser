@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt, QRect, QSize, QTimer
 from PyQt5.QtWidgets import QLabel, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap, QColor, QMouseEvent, QPainter, QPen, QBrush
+import typing
 import numpy as np
 from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
 from silicon_analyser.savefiles import triggerSaveGrids, triggerSaveRects, saveGrids, saveRects
@@ -170,6 +171,7 @@ class FullImage(QLabel):
                     grid.y = posY+y
                     grid.width = ex-x
                     grid.height = ey-y
+                    grid.recalcCell()
                     self._grids[selectedKey] = grid
                     print(f"grid resized: {id(grid)}")
                     self._myWindow.reloadProperyWindowByGrid(grid)
@@ -179,18 +181,18 @@ class FullImage(QLabel):
         if event.button() == Qt.MouseButton.RightButton:
             print("right click")
             self.removeRectAt(event.x(),event.y())
-            
+    
     def removeRectGroup(self, label):
-        del self._rects[label]
-        del self._aiRects[label]
-        del self._rectActive[label]
-        del self._aiRectActive[label]
+        self._rects.pop(label, None)
+        self._aiRects.pop(label, None)
+        self._rectActive.pop(label, None)
+        self._aiRectActive.pop(label, None)
         
     def removeGrid(self, label):
-        del self._grids[label]
-        del self._aiGrids[label]
-        del self._gridsActive[label]
-        del self._aiGridsActive[label]
+        self._grids.pop(label, None)
+        self._aiGrids.pop(label, None)
+        self._gridsActive.pop(label, None)
+        self._aiGridsActive.pop(label, None)
 
     def removeRectAt(self, evx, evy):
         scale = self._myWindow.getScale()
@@ -269,14 +271,14 @@ class FullImage(QLabel):
     def appendAIRect(self,key,x,y,ex,ey):
         self._appendRect(key, self._aiRects, x, y, ex, ey, True)
 
-    def fetchFullData(self):
+    def fetchFullData(self) -> np.ndarray[int,typing.Any]:
         temp = QImage(self._pixmap.toImage())
         ptr = temp.constBits()
         ptr.setsize(temp.byteCount())
         arr = np.frombuffer(ptr, dtype=np.ubyte).reshape(temp.height(), temp.width(), 4) # type: ignore
         return arr
     
-    def fetchData(self,x,y,ex,ey):
+    def fetchData(self,x,y,ex,ey) -> np.ndarray[int,typing.Any]:
         x = int(x)
         ex = int(ex)
         y = int(y)
@@ -306,6 +308,7 @@ class FullImage(QLabel):
         self._aiRects = {}
         self._aiRectActive = {}
     
+    # TODO: maybe deprecated, not shure yet
     def drawRectOnScaledImg(self, scaledImg: QPixmap):
         qp = QPainter(scaledImg)
         brush = QBrush(QColor(0,0,255,80))
@@ -336,11 +339,11 @@ class FullImage(QLabel):
 
         qp.end()
     
-    def calcGridCellsVisibleRange(self, grid):
+    def calcGridCellsVisibleRange(self, grid: Grid):
         posX, posY = self._myWindow.getPos()
         scale = self._myWindow.getScale()
-        cellWidth = grid.width / grid.cols
-        cellHeight = grid.height / grid.rows
+        cellWidth = grid.getCellWidth()
+        cellHeight = grid.getCellHeight()
         
         startCol = -(grid.x - posX)//cellWidth
         startCol = int(max(0, startCol))
@@ -371,20 +374,22 @@ class FullImage(QLabel):
         for k in grids.keys():
             if gridsActive[k]:
                 grid: Grid = grids[k]
-                cellWidth = grid.width / grid.cols
-                cellHeight = grid.height / grid.rows
+                cellWidth = grid.getCellWidth()
+                cellHeight = grid.getCellHeight()
                 startCol, startRow, endCol, endRow = self.calcGridCellsVisibleRange(grid)
                 for row in range(startRow,endRow):
                     if not self._drawGridOnScaledImgRow(qp, gridItemType, rectSetColor, rectSetActiveColor, rectUnsetColor, sposX, sposY, grid, cellWidth, cellHeight, startCol, endCol, row):
                         break
 
     def _drawGridOnScaledImgRow(self, qp:QPainter, gridItemType:str, rectSetColor:QColor, rectSetActiveColor:QColor, rectUnsetColor:QColor, sposX:float, sposY:float, grid:Grid, cellWidth:float, cellHeight:float, startCol:int, endCol:int, row:int):
-        oy = grid.y + row * cellHeight
+        oy = grid.absY(row, 0)
         y = int(self._translatePixelToScaled(oy)-sposY)
         if y >= self.height():
             return False
         for col in range(startCol,endCol):
-            ox = grid.x + col * cellWidth
+            oy = grid.absY(row, col)
+            y = int(self._translatePixelToScaled(oy)-sposY)
+            ox = grid.absX(col, row)
             ex = ox + cellWidth
             ey = oy + cellHeight
             x = int(self._translatePixelToScaled(ox)-sposX)
@@ -407,7 +412,8 @@ class FullImage(QLabel):
                     qp.setBrush(brush)
                 qp.drawRect(x,y,w,h)
         return True
-                        
+
+    # TODO: maybe deprecated, not shure yet                        
     def _drawRectOnScaledImg(self, rects, rectActive, qp:QPainter):
         posX, posY = self._myWindow.getPos()
         scale = self._myWindow.getScale()
@@ -439,6 +445,8 @@ class FullImage(QLabel):
     def appendAIGrid(self, text):
         grid = self._grids[text]
         aiGrid = Grid(grid.name,grid.x,grid.y,grid.cols,grid.rows,grid.width,grid.height)
+        aiGrid.shearX = grid.shearX
+        aiGrid.shearY = grid.shearY
         self._aiGrids[text] = aiGrid
         return aiGrid
     

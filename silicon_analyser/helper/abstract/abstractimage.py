@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QLabel
-
+import typing
+import numpy as np
 from silicon_analyser.grid import Grid
 from silicon_analyser.rect import Rect
 
@@ -8,13 +9,13 @@ class AbstractImage(QLabel):
     def clearAIRects(self):
         raise NotImplementedError()
     
-    def fetchData(self,x,y,ex,ey):
+    def fetchData(self,x,y,ex,ey) -> np.ndarray[int,typing.Any]:
         raise NotImplementedError()
     
     def drawImage(self):
         raise NotImplementedError()
     
-    def fetchFullData(self):
+    def fetchFullData(self) -> np.ndarray[int,typing.Any]:
         raise NotImplementedError()
     
     def appendRectGroup(self, text):
