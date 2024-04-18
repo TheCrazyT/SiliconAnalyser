@@ -1,4 +1,6 @@
 from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
 import os
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
@@ -44,12 +46,20 @@ class Worker(QObject):
         self._computeStatsDlg = computeStatsDlg
 
     def run(self):
-        self._computeStatsDlg.setStatus("Initialize keras ...")
-        os.environ["KERAS_BACKEND"] = "torch"
-        import keras
-        self._computeStatsDlg.setStatus("... finished Initializing keras")
+        useDecisionTree = self._myWindow._actionDecisionTree.isChecked()
+        useNeuralNetwork = self._myWindow._actionNeuralNetwork.isChecked()
         
-        def appendFoundRects(self, rectKeys, maxW, maxH, model_conv, MP):
+        if useNeuralNetwork:
+            self._computeStatsDlg.setStatus("Initialize keras ...")
+            os.environ["KERAS_BACKEND"] = "torch"
+            import keras
+            self._computeStatsDlg.setStatus("... finished Initializing keras")
+        
+        if useDecisionTree:
+            decisionTree = DecisionTreeClassifier(criterion = 'entropy')
+            self._computeStatsDlg.setStatus("Using decision tree")
+        
+        def appendFoundRects(self, rectKeys, maxW, maxH, model_conv, MP, decisionTree: DecisionTreeClassifier|None = None):
             import keras_cv
             bx = 10000
             by = 10000
@@ -61,14 +71,18 @@ class Worker(QObject):
             maxCnt = 20
             data = data[0:dx,0:dy]
             print("data.shape", data.shape)
-            model_conv.build(input_shape=[1,*data.shape[0:2],3])
+            if decisionTree is None:
+                model_conv.build(input_shape=[1,*data.shape[0:2],3])
             subdataIdx = 0
             cnt = 0
             for subdata in blockshaped(data, bx, by):
                 if cnt < maxCnt:
                     print("subdata.shape",subdata.shape)
-                    r = model_conv(np.array([subdata]))[0]
-                    r = r.cpu().detach().numpy()
+                    if decisionTree is None:
+                        r = model_conv(np.array([subdata]))[0]
+                        r = r.cpu().detach().numpy()
+                    else:
+                        r = decisionTree.predict(np.array([subdata]))
                     print("r.shape",r.shape)
                     for rx in range(0,r.shape[0]):
                         for ry in range(0,r.shape[1]):
@@ -87,35 +101,69 @@ class Worker(QObject):
                                 cnt += 1
                 subdataIdx += 1
 
-        class MyPlottingCallback(keras.callbacks.Callback):
-            def __init__(self, plotDlg: ComputeStatsDlg):
-                self._plotDlg = plotDlg
-            
-            def on_epoch_end(self, epoch, logs=None): 
-                if logs is None:
-                    return
-                self._plotDlg.request_graph_update.emit(logs, epoch)
-                if self._plotDlg.isStop():
-                    self.model.stop_training = True # type: ignore
-            
-        class MyThresholdCallback(keras.callbacks.Callback):
-            def __init__(self, threshold, patience):
-                super(MyThresholdCallback, self).__init__()
-                self.threshold = threshold
-                self.patience = patience
-                self.count = 0
-
-            def on_epoch_end(self, epoch, logs=None): 
-                if logs is None:
-                    return
-                val_acc = logs["val_accuracy"]
-                if val_acc >= self.threshold:
-                    if self.count > self.patience:
+        if useNeuralNetwork:
+            class MyPlottingCallback(keras.callbacks.Callback):
+                def __init__(self, plotDlg: ComputeStatsDlg):
+                    self._plotDlg = plotDlg
+                
+                def on_epoch_end(self, epoch, logs=None): 
+                    if logs is None:
+                        return
+                    self._plotDlg.request_graph_update.emit(logs, epoch)
+                    if self._plotDlg.isStop():
                         self.model.stop_training = True # type: ignore
-                    else:
-                        self.count += 1
-                else:
+                
+            class MyThresholdCallback(keras.callbacks.Callback):
+                def __init__(self, threshold, patience):
+                    super(MyThresholdCallback, self).__init__()
+                    self.threshold = threshold
+                    self.patience = patience
                     self.count = 0
+
+                def on_epoch_end(self, epoch, logs=None): 
+                    if logs is None:
+                        return
+                    val_acc = logs["val_accuracy"]
+                    if val_acc >= self.threshold:
+                        if self.count > self.patience:
+                            self.model.stop_training = True # type: ignore
+                        else:
+                            self.count += 1
+                    else:
+                        self.count = 0
+                        
+            def createModels(countGroups, maxW, maxH, MP):
+                conv2 = keras.layers.Conv2D(
+                        countGroups*5,
+                        name="conv2d_2",
+                        kernel_size=(int(maxH//MP-5),int(maxW//MP-5)),
+                        activation="softmax"
+                )
+
+                conv3 = keras.layers.Conv2D(
+                        countGroups,
+                        name="conv2d_3",
+                        kernel_size=(1+5,1+5),
+                        activation="softmax"
+                )
+
+                model_conv = keras.Sequential([
+                    keras.layers.BatchNormalization(),
+                    keras.layers.MaxPooling2D(MP),
+                    conv2,
+                    conv3
+                ])
+
+                model_train = keras.Sequential([
+                    keras.layers.Input((maxH,maxW,3)),
+                    keras.layers.BatchNormalization(),
+                    keras.layers.MaxPooling2D(MP),
+                    conv2,
+                    conv3,
+                    keras.layers.Reshape((countGroups,))
+                ])
+                model_train.summary()
+                return model_conv,model_train
         
         print("_worker runs")
         try:
@@ -132,15 +180,18 @@ class Worker(QObject):
             else:
                 maxW, maxH, countGroups, MP, train, vals = self.initTrainAndValsForRects(rects, ignoreRects)
 
-            model_conv, model_train = self.createModels(keras, countGroups, maxW, maxH, MP)
+            if useNeuralNetwork:
+                model_conv, model_train = createModels(countGroups, maxW, maxH, MP)
             
             if gridMode:
                 aiGrid = self.prepareGridData(grid, labels, countGroups, maxW, maxH, train, vals)
             else:
                 self.prepareRectData(rects, countGroups, ignoreRects, maxW, maxH, train, vals)
             
-            callbacks = [MyPlottingCallback(self._computeStatsDlg),MyThresholdCallback(0.99,200)]
-            model_train.compile(optimizer=keras.optimizers.Adam(learning_rate=0.002),loss="binary_crossentropy",metrics=["accuracy"])
+            if useNeuralNetwork:
+                callbacks = [MyPlottingCallback(self._computeStatsDlg),MyThresholdCallback(0.99,200)]
+                model_train.compile(optimizer=keras.optimizers.Adam(learning_rate=0.002),loss="binary_crossentropy",metrics=["accuracy"])
+            
             print("before fit")
             print("vals",vals)
             print("train.shape",train.shape)
@@ -148,27 +199,43 @@ class Worker(QObject):
             
             xtraining, ytraining, xvalidation, yvalidation = train_test_split(train,vals,shuffle = True,test_size=0.1) 
 
-            history = model_train.fit(
-                x = xtraining,
-                y = xvalidation,
-                epochs = 100000,
-                verbose = 0,
-                validation_data=(ytraining,yvalidation),
-                shuffle = True,
-                batch_size = 512,
-                callbacks = callbacks
-            )
-            
-            print("after fit")
-            self._myWindow.setStatusText("Accuracy: %s" % history.history["accuracy"][-1])
-            
-            if gridMode:
-                appendFoundCellRects(self._myWindow.getImage(), grid, aiGrid, maxW, maxH, model_train)
-            else:
-                appendFoundRects(self, list(rects.keys()), maxW, maxH, model_conv, MP)
+            if useNeuralNetwork:
+                history = model_train.fit(
+                    x = xtraining,
+                    y = xvalidation,
+                    epochs = 100000,
+                    verbose = 0,
+                    validation_data=(ytraining,yvalidation),
+                    shuffle = True,
+                    batch_size = 512,
+                    callbacks = callbacks
+                )
+                print("after fit")
+                self._myWindow.setStatusText("Accuracy: %s" % history.history["accuracy"][-1])
+                if gridMode:
+                    appendFoundCellRects(self._myWindow.getImage(), grid, aiGrid, maxW, maxH, model_train)
+                else:
+                    appendFoundRects(self, list(rects.keys()), maxW, maxH, model_conv, MP)
+                            
+            if useDecisionTree:
+                xtraining2 = xtraining.reshape(xtraining.shape[0],xtraining.shape[1]*xtraining.shape[2]*xtraining.shape[3])
+                ytraining2 = ytraining.reshape(ytraining.shape[0],ytraining.shape[1]*ytraining.shape[2]*ytraining.shape[3])
+                decisionTree.fit(xtraining2, xvalidation)
+                y2 = decisionTree.predict(ytraining2)
+                print("after fit")
+                accuracy = accuracy_score(y2, yvalidation)
+                self._computeStatsDlg.request_graph_update.emit({"loss":1,"val_loss":1,"accuracy":accuracy,"val_accuracy":accuracy}, 0)
+                self._computeStatsDlg.request_graph_update.emit({"loss":1,"val_loss":1,"accuracy":accuracy,"val_accuracy":accuracy}, 1)
+                self._myWindow.setStatusText("Accuracy: %s" % accuracy)
+                if gridMode:
+                    appendFoundCellRects(self._myWindow.getImage(), grid, aiGrid, maxW, maxH, None, decisionTree)
+                else:
+                    appendFoundRects(self, list(rects.keys()), maxW, maxH, None, MP, decisionTree)
+                self._computeStatsDlg.setStatus("Decision tree finished with accuracy: %s" % accuracy)
             
             self._myWindow.getImage().drawImage()
-            self._myWindow.setLastModel(aiGrid.name, model_train)
+            if useNeuralNetwork:
+                self._myWindow.setLastModel(aiGrid.name, model_train)
         except Exception as e:
             self._computeStatsDlg.setError(e)
         finally:
@@ -266,8 +333,8 @@ class Worker(QObject):
             for cx in range(0,grid.cols):
                 for cy in range(0,grid.rows):
                     if grid.isRectSet(cx,cy,l):
-                        x = int(grid.x + cx*maxW)
-                        y = int(grid.y + cy*maxH)
+                        x = grid.absX(cx,cy)
+                        y = grid.absY(cy,cx)
                         ex = x + maxW - 1
                         ey = y + maxH - 1
                         data = self._myWindow.getImage().fetchData(x,y,ex,ey)
@@ -277,39 +344,6 @@ class Worker(QObject):
                         i += 1
             ii += 1
         return aiGrid
-
-    def createModels(self, keras, countGroups, maxW, maxH, MP):
-        conv2 = keras.layers.Conv2D(
-                countGroups*5,
-                name="conv2d_2",
-                kernel_size=(int(maxH//MP-5),int(maxW//MP-5)),
-                activation="softmax"
-        )
-
-        conv3 = keras.layers.Conv2D(
-                countGroups,
-                name="conv2d_3",
-                kernel_size=(1+5,1+5),
-                activation="softmax"
-        )
-
-        model_conv = keras.Sequential([
-            keras.layers.BatchNormalization(),
-            keras.layers.MaxPooling2D(MP),
-            conv2,
-            conv3
-        ])
-
-        model_train = keras.Sequential([
-            keras.layers.Input((maxH,maxW,3)),
-            keras.layers.BatchNormalization(),
-            keras.layers.MaxPooling2D(MP),
-            conv2,
-            conv3,
-            keras.layers.Reshape((countGroups,))
-        ])
-        model_train.summary()
-        return model_conv,model_train
         
 class ComputeBtn(QPushButton):
     _computeStatsDlg: ComputeStatsDlg
@@ -322,6 +356,11 @@ class ComputeBtn(QPushButton):
     def initialize(self, myWindow: AbstractMyWindow):
         self._myWindow = myWindow
     
+    def finished(self):
+        self.setText("Compute")
+        self.setEnabled(True)
+        print("finished")
+        
     def buttonClicked(self, event: QMouseEvent):
         print("ComputeBtn: buttonClicked")
         self._computeStatsDlg.show()
@@ -332,15 +371,7 @@ class ComputeBtn(QPushButton):
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
         self._thread.finished.connect(self._thread.deleteLater)
-        self._thread.finished.connect(
-            lambda: print("finished")
-        )
-        self._thread.finished.connect(
-            lambda: self.setText("Compute")
-        )
-        self._thread.finished.connect(
-            lambda: self.setEnabled(True)
-        )
+        self._thread.finished.connect(self.finished)
         self.setText("...")
         self.setEnabled(False)
         if isSingleThread():

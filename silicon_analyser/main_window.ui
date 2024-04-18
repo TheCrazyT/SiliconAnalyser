@@ -150,7 +150,15 @@
     <addaction name="_actionUrl"/>
     <addaction name="separator"/>
    </widget>
+   <widget class="QMenu" name="menuComputation_method">
+    <property name="title">
+     <string>Computation method</string>
+    </property>
+    <addaction name="_actionDecisionTree"/>
+    <addaction name="_actionNeuralNetwork"/>
+   </widget>
    <addaction name="menuInfo"/>
+   <addaction name="menuComputation_method"/>
   </widget>
   <action name="_actionGridAddRowTop">
    <property name="text">
@@ -215,6 +223,28 @@
   <action name="_actionExportCellsToImages">
    <property name="text">
     <string>Export cells to images</string>
+   </property>
+  </action>
+  <action name="_actionDecisionTree">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Decision Tree</string>
+   </property>
+  </action>
+  <action name="_actionNeuralNetwork">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Neural network</string>
    </property>
   </action>
  </widget>

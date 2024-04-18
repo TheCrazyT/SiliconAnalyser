@@ -43,6 +43,9 @@ class MyWindow(AbstractMyWindow):
     _actionSaveAsCsv: QAction
     _actionViewAsPixelimage: QAction
     _actionExportCellsToImages: QAction
+    _actionDecisionTree: QAction
+    _actionNeuralNetwork: QAction
+
     autosave: bool
     menuBar: QMenu
     
@@ -96,6 +99,9 @@ class MyWindow(AbstractMyWindow):
         computeBtn.setDisabled(True)
         addLabelBtn.setDisabled(True)
         tree.evtTreeSelectionChanged.connect(self.treeSelectionChanged)
+
+        self._actionDecisionTree.triggered.connect(self.decisionTreeChecked)
+        self._actionNeuralNetwork.triggered.connect(self.neuralNetworkChecked)
         
         self._posX = 0
         self._posY = 0
@@ -134,6 +140,15 @@ class MyWindow(AbstractMyWindow):
         version = importlib.metadata.version("silicon-analyser")
         action = menuBar.addAction(f"Version: {version}")
         action.triggered.connect(self.openMainUrl)
+        
+
+    def decisionTreeChecked(self):
+        if(self._actionDecisionTree.isChecked()):
+            self._actionNeuralNetwork.setChecked(False)
+
+    def neuralNetworkChecked(self):
+        if(self._actionNeuralNetwork.isChecked()):
+            self._actionDecisionTree.setChecked(False)
         
     def treeSelectionChanged(self, selection: QItemSelection):
         tree: Tree = self._tree

@@ -1,6 +1,7 @@
 import typing
 import os
 import numpy as np
+from sklearn.tree import DecisionTreeClassifier
 os.environ["KERAS_BACKEND"] = "torch"
 import keras
 from silicon_analyser.grid import Grid, getAllCellRects
@@ -16,7 +17,9 @@ def getDefaultMaxWMaxH(grid: Grid) -> tuple[int,int]:
         maxH += MP - (maxH % MP)
     return maxW, maxH
 
-def appendFoundCellRects(img: AbstractImage, grid: Grid, aiGrid: Grid, maxW: int, maxH: int, model: keras.Sequential):
+def appendFoundCellRects(img: AbstractImage, grid: Grid, aiGrid: Grid, maxW: int, maxH: int, model: keras.Sequential|None, decisionTree: DecisionTreeClassifier|None = None):
+    if model is None and decisionTree is None:
+        return
     if maxW is None or maxH is None:
         maxW, maxH = getDefaultMaxWMaxH(grid)
     labels = grid.getLabels()
@@ -32,7 +35,12 @@ def appendFoundCellRects(img: AbstractImage, grid: Grid, aiGrid: Grid, maxW: int
         dataIndexes.append((cx,cy))
     data = np.array(dataList,dtype=np.float32)
     print("data.shape",data.shape)
-    r = model.predict(data)
+    if decisionTree is None:
+        if model is None:
+            return
+        r = model.predict(data)
+    else:
+        r = decisionTree.predict(data.reshape(data.shape[0],data.shape[1]*data.shape[2]*data.shape[3]))
     print("r.shape",r.shape)
     for ri in range(0,r.shape[0]):
         currentRec = r[ri]

@@ -14,6 +14,8 @@ class AbstractMyWindow(QMainWindow):
     _actionSaveAsCsv: QAction
     _actionViewAsPixelimage: QAction
     _actionExportCellsToImages: QAction
+    _actionDecisionTree: QAction
+    _actionNeuralNetwork: QAction
     autosave: bool
     def __init__(self):
         QMainWindow.__init__(self)
