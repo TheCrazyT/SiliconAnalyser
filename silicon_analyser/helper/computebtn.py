@@ -133,33 +133,43 @@ class Worker(QObject):
                         self.count = 0
                         
             def createModels(countGroups, maxW, maxH, MP):
-                conv2 = keras.layers.Conv2D(
-                        countGroups*5,
-                        name="conv2d_2",
-                        kernel_size=(int(maxH//MP-5),int(maxW//MP-5)),
-                        activation="softmax"
-                )
-
-                conv3 = keras.layers.Conv2D(
-                        countGroups,
-                        name="conv2d_3",
-                        kernel_size=(1+5,1+5),
-                        activation="softmax"
-                )
+                if maxH//MP-5>1 and maxW//MP-5>1:
+                    conv2 = keras.layers.Conv2D(
+                            countGroups*5,
+                            name="conv2d_2",
+                            kernel_size=(int(maxH//MP-5),int(maxW//MP-5)),
+                            activation="softmax"
+                    )
+                    conv3 = keras.layers.Conv2D(
+                            countGroups,
+                            name="conv2d_3",
+                            kernel_size=(1+5,1+5),
+                            activation="softmax"
+                    )
+                else:
+                    conv2 = None
+                    conv3 = keras.layers.Conv2D(
+                            countGroups,
+                            name="conv2d_3",
+                            kernel_size=(int(maxH//MP),int(maxW//MP)),
+                            activation="softmax"
+                    )
+                
+                conv_layers = [conv2,conv3]
+                if conv2 is None:
+                    conv_layers = [conv3]
 
                 model_conv = keras.Sequential([
                     keras.layers.BatchNormalization(),
                     keras.layers.MaxPooling2D(MP),
-                    conv2,
-                    conv3
+                    *conv_layers
                 ])
 
                 model_train = keras.Sequential([
                     keras.layers.Input((maxH,maxW,3)),
                     keras.layers.BatchNormalization(),
                     keras.layers.MaxPooling2D(MP),
-                    conv2,
-                    conv3,
+                    *conv_layers,
                     keras.layers.Reshape((countGroups,))
                 ])
                 model_train.summary()
@@ -237,6 +247,7 @@ class Worker(QObject):
             if useNeuralNetwork:
                 self._myWindow.setLastModel(aiGrid.name, model_train)
         except Exception as e:
+            print(repr(e))
             self._computeStatsDlg.setError(e)
         finally:
             self.finished.emit()
@@ -317,7 +328,6 @@ class Worker(QObject):
             self._myWindow.getTree().addTreeItem(k,"ai")
             for x,y,ex,ey in rects[k]:
                 data = self._myWindow.getImage().fetchData(x,y,x+maxW-1,y+maxH-1)
-                    #np.save(f"samples/{i}.bin",data)
                 train[i,0:maxH,0:maxW] = data
                 vals[i] = np.eye(countGroups,dtype=np.float32)[ii]
                 i += 1
@@ -338,8 +348,7 @@ class Worker(QObject):
                         ex = x + maxW - 1
                         ey = y + maxH - 1
                         data = self._myWindow.getImage().fetchData(x,y,ex,ey)
-                        train[i,0:maxH,0:maxW] = data
-                        #np.save(f"samples/{l}_{cx:03d}_{cy:03d}_{x:04d}_{y:04d}.bin",data)
+                        train[i,0:data.shape[0],0:data.shape[1]] = data
                         vals[i] = np.eye(countGroups,dtype=np.float32)[ii]
                         i += 1
             ii += 1

@@ -66,5 +66,6 @@ Frameworks/Libraries used:
 * option to calculate/classify by decision tree
 * auto-compute to calculate in background while you are selecting new cells for your labels
 * ai-model configuration
+* project management (project-file/-folder)
 * possibility to rotate grid
 * maybe store your model on a public place? (for others to use)

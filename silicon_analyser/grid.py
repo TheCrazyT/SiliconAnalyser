@@ -67,9 +67,13 @@ class Grid:
         self.rectActive(text)
     
     def rectActive(self, text):
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
         self._rectsActive[text] = True
     
     def rectDeactive(self, text):
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
         self._rectsActive[text] = False
         
     def addTopRow(self):

@@ -6,6 +6,12 @@ from silicon_analyser.rect import Rect
 
 class AbstractImage(QLabel):
     
+    def getImageHeight(self) -> int:
+        raise NotImplementedError()
+
+    def getImageWidth(self) -> int:
+        raise NotImplementedError()
+    
     def clearAIRects(self):
         raise NotImplementedError()
     

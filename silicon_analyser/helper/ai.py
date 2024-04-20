@@ -31,7 +31,10 @@ def appendFoundCellRects(img: AbstractImage, grid: Grid, aiGrid: Grid, maxW: int
         y = grid.absY(cy,cx)
         ex = int(x + maxW - 1)
         ey = int(y + maxH - 1)
-        dataList.append(img.fetchData(x,y,ex,ey))
+        a = np.zeros((maxH,maxW,3))
+        data = img.fetchData(x,y,ex,ey)
+        a[0:data.shape[0],0:data.shape[1]] = data
+        dataList.append(a)
         dataIndexes.append((cx,cy))
     data = np.array(dataList,dtype=np.float32)
     print("data.shape",data.shape)

@@ -1,3 +1,4 @@
+from functools import lru_cache
 from PyQt5.QtCore import Qt, QRect, QSize, QTimer
 from PyQt5.QtWidgets import QLabel, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap, QColor, QMouseEvent, QPainter, QPen, QBrush
@@ -277,10 +278,9 @@ class FullImage(QLabel):
         temp = QImage(self._pixmap.toImage())
         ptr = temp.constBits()
         ptr.setsize(temp.byteCount())
-        arr = np.frombuffer(ptr, dtype=np.ubyte).reshape(temp.height(), temp.width(), 4) # type: ignore
-        return arr
+        return np.ndarray((temp.height(), temp.width(), 4), buffer=ptr, strides=[temp.bytesPerLine(), 4, 1], dtype=np.uint8) # type: ignore
     
-    def fetchData(self,x,y,ex,ey) -> np.ndarray[int,typing.Any]:
+    def fetchData(self,x:float,y:float,ex:float,ey:float) -> np.ndarray[int,typing.Any]:
         x = int(x)
         ex = int(ex)
         y = int(y)
@@ -514,3 +514,9 @@ class FullImage(QLabel):
     def deactivateAIRectGroup(self, text: str):
         self._aiRectActive[text] = False
         self.drawImage()
+        
+    def getImageHeight(self) -> int:
+        return self._pixmap.height()
+
+    def getImageWidth(self) -> int:
+        return self._pixmap.width()

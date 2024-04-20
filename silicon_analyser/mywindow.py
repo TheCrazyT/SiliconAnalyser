@@ -236,9 +236,13 @@ class MyWindow(AbstractMyWindow):
     
     def setPosX(self, x):
         self._posX = x
+        self._posX = max(self._posX,0)
+        self._posX = min(self._posX,self._image.getImageWidth()-self.imageWidth()/self.getScale())
     
     def setPosY(self, y):
         self._posY = y
+        self._posY = max(self._posY,0)
+        self._posY = min(self._posY,self._image.getImageHeight()-self.imageHeight()/self.getScale())
     
     def drawImgAndMinimap(self):
         self.getImage().drawImage()
@@ -255,17 +259,13 @@ class MyWindow(AbstractMyWindow):
         if keyEvent.modifiers() == Qt.KeyboardModifier.ShiftModifier:
             c = 100
         if keyEvent.key() == Qt.Key.Key_Left:
-            self._posX -= c
-            self._posX = max(self._posX,0)
+            self.setPosX(self.getPosX() - c)
         if keyEvent.key() == Qt.Key.Key_Right:
-            self._posX += c
-            self._posX = min(self._posX,self._pixmap.width())
+            self.setPosX(self.getPosX() + c)
         if keyEvent.key() == Qt.Key.Key_Up:
-            self._posY -= c
-            self._posY = max(self._posY,0)
+            self.setPosY(self.getPosY() - c)
         if keyEvent.key() == Qt.Key.Key_Down:
-            self._posY += c
-            self._posY = min(self._posY,self._pixmap.height())
+            self.setPosY(self.getPosY() + c)
         self.drawImgAndMinimap()
             
     def wheelEvent(self,event):

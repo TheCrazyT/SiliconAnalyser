@@ -37,6 +37,6 @@ class MiniMap(QLabel):
         sc2x = sc1x/scale
         sc1y = self.scaleMinimapY()
         sc2y = sc1y/scale
-        qp.drawRect(int(posX*sc1x),int(posY*sc1y),int(300*sc2x),int(300*sc2y))
+        qp.drawRect(int(posX*sc1x),int(posY*sc1y),int(self._myWindow.imageWidth()*sc2x),int(self._myWindow.imageHeight()*sc2y))
         qp.end()
         self.setPixmap(minimapPm)

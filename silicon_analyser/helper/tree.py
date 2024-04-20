@@ -230,6 +230,8 @@ class Tree(AbstractTreeHelper):
             grid.recalcCell()
             myWindow: AbstractMyWindow = self._myWindow
             myWindow.getImage().drawImage()
+            tree:Tree = self
+            myWindow.reloadPropertyWindow(tree.selectionModel().selection())
 
     def addBottomRows(self, *args, **kwargs):
         print("addBottomRows")
@@ -243,6 +245,8 @@ class Tree(AbstractTreeHelper):
             grid.recalcCell()
             myWindow: AbstractMyWindow = self._myWindow
             myWindow.getImage().drawImage()
+            tree:Tree = self
+            myWindow.reloadPropertyWindow(tree.selectionModel().selection())
 
     def removeTopRows(self, *args, **kwargs):
         print("addTopRows")
@@ -256,6 +260,8 @@ class Tree(AbstractTreeHelper):
             grid.recalcCell()
             myWindow: AbstractMyWindow = self._myWindow
             myWindow.getImage().drawImage()
+            tree:Tree = self
+            myWindow.reloadPropertyWindow(tree.selectionModel().selection())
 
     def removeBottomRows(self, *args, **kwargs):
         print("addBottomRows")
@@ -269,6 +275,8 @@ class Tree(AbstractTreeHelper):
             grid.recalcCell()
             myWindow: AbstractMyWindow = self._myWindow
             myWindow.getImage().drawImage()
+            tree:Tree = self
+            myWindow.reloadPropertyWindow(tree.selectionModel().selection())
         
     def treeSelectionChanged(self, selection: QItemSelection):
         print("treeSelectionChanged")
