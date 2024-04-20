@@ -33,7 +33,10 @@ class MyWindow(AbstractMyWindow):
     _minimap: MiniMap
     _image: FullImage
     _models: dict[str,object]
-    _actionGridAddRowTop: QAction
+    _actionGridAddXRowsTop: QAction
+    _actionGridAddXRowsBottom: QAction
+    _actionGridRemoveXRowsTop: QAction
+    _actionGridRemoveXRowsBottom: QAction
     _actionSaveModel: QAction
     _actionLoadModel: QAction
     _actionRemoveGrid: QAction

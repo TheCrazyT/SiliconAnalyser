@@ -95,10 +95,12 @@ class FullImage(QLabel):
                 if x < evx and y < evy and ex > evx and ey > evy:
                     tevx = self._translateEventToPixel(evx)
                     tevy = self._translateEventToPixel(evy)
+                    rx = grid.x - posX
+                    ry = grid.y - posY
                     if button == Qt.MouseButton.LeftButton:
-                        grid.setRect(int((tevx - (grid.x - posX))/(grid.width/grid.cols)),int((tevy - (grid.y - posY))/(grid.height/grid.rows)), self._myWindow.getTree().selectedLabel())
+                        grid.setRect(int((tevx - rx)/(grid.getCellWidth())),int((tevy - ry)/(grid.getCellHeight())), self._myWindow.getTree().selectedLabel())
                     if button == Qt.MouseButton.RightButton:
-                        grid.unsetRect(int((tevx - (grid.x - posX))/(grid.width/grid.cols)),int((tevy - (grid.y - posY))/(grid.height/grid.rows)), self._myWindow.getTree().selectedLabel())
+                        grid.unsetRect(int((tevx - rx)/(grid.getCellWidth())),int((tevy - ry)/(grid.getCellHeight())), self._myWindow.getTree().selectedLabel())
                     if self._myWindow.autosave:
                         triggerSaveGrids()
                     
@@ -367,7 +369,10 @@ class FullImage(QLabel):
     def getGrids(self) -> dict[str,Grid]:
         return self._grids
         
-    def _drawGridOnScaledImg(self, grids, gridsActive, qp:QPainter, gridItemType:str, rectSetColor:QColor = QColor(0,255,255,40), rectSetActiveColor:QColor = QColor(0,255,255,127), rectUnsetColor:QColor = QColor(0,0,255,20)):
+    def _drawGridOnScaledImg(self, grids: dict[str,Grid], gridsActive: dict[str,bool], qp:QPainter, gridItemType:str, rectSetColor:QColor = QColor(0,255,255,40), rectSetActiveColor:QColor = QColor(0,255,255,127), rectUnsetColor:QColor = QColor(0,0,255,20)):
+        activeBrush = QBrush(rectSetActiveColor)
+        nonActiveBrush = QBrush(rectSetColor)
+        unsetBrush = QBrush(rectUnsetColor)
         posX, posY = self._myWindow.getPos()
         scale = self._myWindow.getScale()
         sposX, sposY = posX*scale, posY*scale
@@ -378,10 +383,10 @@ class FullImage(QLabel):
                 cellHeight = grid.getCellHeight()
                 startCol, startRow, endCol, endRow = self.calcGridCellsVisibleRange(grid)
                 for row in range(startRow,endRow):
-                    if not self._drawGridOnScaledImgRow(qp, gridItemType, rectSetColor, rectSetActiveColor, rectUnsetColor, sposX, sposY, grid, cellWidth, cellHeight, startCol, endCol, row):
+                    if not self._drawGridOnScaledImgRow(qp, gridItemType, activeBrush, nonActiveBrush, unsetBrush, sposX, sposY, grid, cellWidth, cellHeight, startCol, endCol, row):
                         break
 
-    def _drawGridOnScaledImgRow(self, qp:QPainter, gridItemType:str, rectSetColor:QColor, rectSetActiveColor:QColor, rectUnsetColor:QColor, sposX:float, sposY:float, grid:Grid, cellWidth:float, cellHeight:float, startCol:int, endCol:int, row:int):
+    def _drawGridOnScaledImgRow(self, qp:QPainter, gridItemType:str, activeBrush:QBrush, nonActiveBrush:QBrush, unsetBrush:QBrush, sposX:float, sposY:float, grid:Grid, cellWidth:float, cellHeight:float, startCol:int, endCol:int, row:int):
         oy = grid.absY(row, 0)
         y = int(self._translatePixelToScaled(oy)-sposY)
         if y >= self.height():
@@ -403,12 +408,12 @@ class FullImage(QLabel):
                 if grid.isRectSet(col,row):
                     rectLabel = grid.rectLabel(col, row)
                     if self._myWindow.getTree().isItemSelected(rectLabel, grid.name, gridItemType):
-                        brush = QBrush(rectSetActiveColor)
+                        brush = activeBrush
                     else:
-                        brush = QBrush(rectSetColor)
+                        brush = nonActiveBrush
                     qp.setBrush(brush)
                 else:
-                    brush = QBrush(rectUnsetColor)
+                    brush = unsetBrush
                     qp.setBrush(brush)
                 qp.drawRect(x,y,w,h)
         return True

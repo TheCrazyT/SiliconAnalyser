@@ -1,3 +1,6 @@
+from functools import lru_cache
+
+
 class Grid:
     _rects: dict[str,list[list[int]]]
     _rectsActive: dict[str,bool]
@@ -71,13 +74,40 @@ class Grid:
         
     def addTopRow(self):
         self.y -= int(self.height/self.rows)
+        self.height += int(self.height/self.rows)
         self.rows += 1
         for label in self._rects:
             for i in range(0,len(self._rects[label])):
                 col, row = self._rects[label][i]
                 self._rects[label][i] = [col, row+1]
+
+    def addBottomRow(self):
+        self.height += int(self.height/self.rows)
+        self.rows += 1
+        
+    def removeTopRow(self):
+        for label in self._rects:
+            delEntries = []
+            for i in range(0,len(self._rects[label])):
+                col, row = self._rects[label][i]
+                if row - 1 < 0:
+                    delEntries.append(i)
+                else:
+                    self._rects[label][i] = [col, row-1]
+            delEntries = sorted(delEntries, reverse=True)
+            for i in delEntries:
+                del self._rects[label][i]
+        self.y += int(self.height/self.rows)
+        self.height -= int(self.height/self.rows)
+        self.rows -= 1
+
+    def removeBottomRow(self):
+        self.height -= int(self.height/self.rows)
+        self.rows -= 1
     
     def setRect(self, col, row, label):
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
         #print(f"setRect {col} {row} {label}")
         r = [col, row]
         if label not in self._rects:
@@ -88,11 +118,14 @@ class Grid:
         self._rects[label].append(r)
         
     def unsetRect(self, col, row, label):
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
         print(f"unsetRect {col} {row}")
         r = [col, row]
         if r in self._rects[label]:
             self._rects[label].remove(r)
     
+    @lru_cache(maxsize=None)
     def rectLabel(self, col, row) -> str|None:
         r = [col, row]
         keys = self._rects.keys()
@@ -101,16 +134,16 @@ class Grid:
                 if r in self._rects[k]:
                     return k
     
-    def isRectSet(self, col ,row, key = None) -> bool:
+    @lru_cache(maxsize=None)
+    def isRectSet(self, col , row, key = None) -> bool:
         r = [col, row]
         if key is None:
             keys = self._rects.keys()
         else:
             keys = [key]
         for k in keys:
-            if self._rectsActive[k]:
-                if r in self._rects[k]:
-                    return True
+            if self._rectsActive[k] and r in self._rects[k]:
+                return True
         return False
 
     def getRects(self, key: str) -> list[list[int]]:

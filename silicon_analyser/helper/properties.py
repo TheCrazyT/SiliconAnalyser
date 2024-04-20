@@ -27,8 +27,10 @@ class PropertiesUtil:
         grid: Grid = self._myWindow.getTree().getSelectedGrid()
         if(name == "cols"):
             grid.cols = int(value)
+            grid.recalcCell()
         if(name == "rows"):
             grid.rows = int(value)
+            grid.recalcCell()
         if(name == "x"):
             grid.x = int(value)
         if(name == "y"):

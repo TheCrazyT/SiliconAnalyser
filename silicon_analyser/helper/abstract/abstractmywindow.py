@@ -6,7 +6,6 @@ from silicon_analyser.helper.abstract.abstractimage import AbstractImage
 from silicon_analyser.helper.abstract.abstracttreehelper import AbstractTreeHelper
 
 class AbstractMyWindow(QMainWindow):
-    _actionGridAddRowTop: QAction
     _actionSaveModel: QAction
     _actionLoadModel: QAction
     _actionRemoveGrid: QAction
@@ -16,6 +15,10 @@ class AbstractMyWindow(QMainWindow):
     _actionExportCellsToImages: QAction
     _actionDecisionTree: QAction
     _actionNeuralNetwork: QAction
+    _actionGridAddXRowsBottom: QAction
+    _actionGridAddXRowsTop: QAction
+    _actionGridRemoveXRowsTop: QAction
+    _actionGridRemoveXRowsBottom: QAction
     autosave: bool
     def __init__(self):
         QMainWindow.__init__(self)

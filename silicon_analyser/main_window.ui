@@ -160,14 +160,6 @@
    <addaction name="menuInfo"/>
    <addaction name="menuComputation_method"/>
   </widget>
-  <action name="_actionGridAddRowTop">
-   <property name="text">
-    <string>Add row to top</string>
-   </property>
-   <property name="toolTip">
-    <string>Add row to top</string>
-   </property>
-  </action>
   <action name="_actionSaveModel">
    <property name="text">
     <string>Save computation model</string>
@@ -245,6 +237,35 @@
    </property>
    <property name="text">
     <string>Neural network</string>
+   </property>
+  </action>
+  <action name="_actionGridAddXRowsBottom">
+   <property name="text">
+    <string>Add X rows to bottom</string>
+   </property>
+  </action>
+  <action name="_actionGridAddXRowsTop">
+   <property name="text">
+    <string>Add X rows to top</string>
+   </property>
+   <property name="toolTip">
+    <string>Add X rows to top</string>
+   </property>
+  </action>
+  <action name="_actionGridRemoveXRowsBottom">
+   <property name="text">
+    <string>Remove X rows on bottom</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove X rows on bottom</string>
+   </property>
+  </action>
+  <action name="_actionGridRemoveXRowsTop">
+   <property name="text">
+    <string>Remove X rows on top</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove X rows on top</string>
    </property>
   </action>
  </widget>

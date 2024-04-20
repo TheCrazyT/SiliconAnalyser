@@ -4,7 +4,7 @@ import numpy as np
 import re
 from PyQt5.QtCore import QItemSelection, pyqtSignal, QItemSelectionModel
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QTreeView, QWidget, QAction, QFileDialog
+from PyQt5.QtWidgets import QTreeView, QWidget, QAction, QFileDialog, QInputDialog
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
 from silicon_analyser.grid import Grid
@@ -16,7 +16,10 @@ from silicon_analyser.dialogs.pixel_image import PixelImageDlg
 
 class Tree(AbstractTreeHelper):
     _myWindow: AbstractMyWindow
-    _actionGridAddRowTop: QAction
+    _actionGridAddXRowsBottom: QAction
+    _actionGridAddXRowsTop: QAction
+    _actionGridRemoveXRowsBottom: QAction
+    _actionGridRemoveXRowsTop: QAction
     _actionSaveModel: QAction
     _actionLoadModel: QAction
     _actionRemoveGrid: QAction
@@ -33,7 +36,6 @@ class Tree(AbstractTreeHelper):
     def initialize(self, myWindow: AbstractMyWindow):
         self._myWindow = myWindow
         self.selectionModel().selectionChanged.connect(self.treeSelectionChanged)
-        self._actionGridAddRowTop = self._myWindow._actionGridAddRowTop
         self._actionSaveModel = self._myWindow._actionSaveModel
         self._actionLoadModel = self._myWindow._actionLoadModel
         self._actionRemoveGrid = self._myWindow._actionRemoveGrid
@@ -41,7 +43,14 @@ class Tree(AbstractTreeHelper):
         self._actionSaveAsCsv = self._myWindow._actionSaveAsCsv
         self._actionViewAsPixelimage = self._myWindow._actionViewAsPixelimage
         self._actionExportCellsToImages = self._myWindow._actionExportCellsToImages
-        self.addAction(self._actionGridAddRowTop)
+        self._actionGridAddXRowsTop = self._myWindow._actionGridAddXRowsTop
+        self._actionGridAddXRowsBottom = self._myWindow._actionGridAddXRowsBottom
+        self._actionGridRemoveXRowsTop = self._myWindow._actionGridRemoveXRowsTop
+        self._actionGridRemoveXRowsBottom = self._myWindow._actionGridRemoveXRowsBottom
+        self.addAction(self._actionGridAddXRowsTop)
+        self.addAction(self._actionGridAddXRowsBottom)
+        self.addAction(self._actionGridRemoveXRowsTop)
+        self.addAction(self._actionGridRemoveXRowsBottom)
         self.addAction(self._actionSaveModel)
         self.addAction(self._actionLoadModel)
         self.addAction(self._actionRemoveGrid)
@@ -49,7 +58,10 @@ class Tree(AbstractTreeHelper):
         self.addAction(self._actionSaveAsCsv)
         self.addAction(self._actionViewAsPixelimage)
         self.addAction(self._actionExportCellsToImages)
-        self._actionGridAddRowTop.triggered.connect(self.addTopRow)
+        self._actionGridAddXRowsTop.triggered.connect(self.addTopRows)
+        self._actionGridAddXRowsBottom.triggered.connect(self.addBottomRows)
+        self._actionGridRemoveXRowsTop.triggered.connect(self.removeTopRows)
+        self._actionGridRemoveXRowsBottom.triggered.connect(self.removeBottomRows)
         self._actionSaveModel.triggered.connect(self.saveModel)
         self._actionLoadModel.triggered.connect(self.loadModel)
         self._actionRemoveGrid.triggered.connect(self.removeGrid)
@@ -206,12 +218,57 @@ class Tree(AbstractTreeHelper):
         myWindow.getImage().drawImage()
         self.removeSelectedRow()
 
-    def addTopRow(self, *args, **kwargs):
-        print("addTopRow")
-        grid: Grid|None = self.getSelectedGrid()
-        if grid is None:
-            return
-        grid.addTopRow()
+    def addTopRows(self, *args, **kwargs):
+        print("addTopRows")
+        num,ok = QInputDialog.getInt(self,"How many rows to add?","enter a number",1)
+        if ok:
+            grid: Grid|None = self.getSelectedGrid()
+            if grid is None:
+                return
+            for _ in range(0,num):
+                grid.addTopRow()
+            grid.recalcCell()
+            myWindow: AbstractMyWindow = self._myWindow
+            myWindow.getImage().drawImage()
+
+    def addBottomRows(self, *args, **kwargs):
+        print("addBottomRows")
+        num,ok = QInputDialog.getInt(self,"How many rows to add?","enter a number",1)
+        if ok:
+            grid: Grid|None = self.getSelectedGrid()
+            if grid is None:
+                return
+            for _ in range(0,num):
+                grid.addBottomRow()
+            grid.recalcCell()
+            myWindow: AbstractMyWindow = self._myWindow
+            myWindow.getImage().drawImage()
+
+    def removeTopRows(self, *args, **kwargs):
+        print("addTopRows")
+        num,ok = QInputDialog.getInt(self,"How many rows to add?","enter a number",1)
+        if ok:
+            grid: Grid|None = self.getSelectedGrid()
+            if grid is None:
+                return
+            for _ in range(0,num):
+                grid.removeTopRow()
+            grid.recalcCell()
+            myWindow: AbstractMyWindow = self._myWindow
+            myWindow.getImage().drawImage()
+
+    def removeBottomRows(self, *args, **kwargs):
+        print("addBottomRows")
+        num,ok = QInputDialog.getInt(self,"How many rows to add?","enter a number",1)
+        if ok:
+            grid: Grid|None = self.getSelectedGrid()
+            if grid is None:
+                return
+            for _ in range(0,num):
+                grid.removeBottomRow()
+            grid.recalcCell()
+            myWindow: AbstractMyWindow = self._myWindow
+            myWindow.getImage().drawImage()
         
     def treeSelectionChanged(self, selection: QItemSelection):
         print("treeSelectionChanged")
@@ -220,7 +277,8 @@ class Tree(AbstractTreeHelper):
         tree = self
         selectedType = tree.selectedType()
         if((selectedType == TreeItem.TYPE_GRID_ITEM) or (selectedType == TreeItem.TYPE_GRID)):
-            self._actionGridAddRowTop.setVisible(True)
+            self._actionGridAddXRowsTop.setVisible(True)
+            self._actionGridAddXRowsBottom.setVisible(True)
             grid: Grid|None = self.getSelectedGrid()
             if grid is None:
                 return
@@ -228,7 +286,8 @@ class Tree(AbstractTreeHelper):
                 self._actionSaveModel.setVisible(True)
             self._actionLoadModel.setVisible(True)
         else:
-            self._actionGridAddRowTop.setVisible(False)
+            self._actionGridAddXRowsTop.setVisible(False)
+            self._actionGridAddXRowsBottom.setVisible(False)
             self._actionSaveModel.setVisible(False)
             self._actionLoadModel.setVisible(False)
         if(selectedType == TreeItem.TYPE_GRID):

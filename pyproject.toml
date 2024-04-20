@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = "silicon-analyser"
-version = "1.0.8"
+version = "1.0.9"
 authors = [
   { name="CrazyT", email="crazyt2019+sa@gmail.com" },
 ]
