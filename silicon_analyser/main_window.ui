@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>924</width>
-    <height>657</height>
+    <height>857</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,8 +21,40 @@
     </size>
    </property>
    <layout class="QGridLayout" name="gridLayout">
-    <item row="3" column="0">
-     <widget class="Tree" name="_tree">
+    <item row="6" column="0">
+     <widget class="MiniMap" name="_minimap">
+      <property name="minimumSize">
+       <size>
+        <width>300</width>
+        <height>300</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>300</width>
+        <height>300</height>
+       </size>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1" rowspan="7">
+     <widget class="FullImage" name="_image">
+      <property name="minimumSize">
+       <size>
+        <width>600</width>
+        <height>600</height>
+       </size>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="AddLabelBtn" name="_addLabelBtn">
       <property name="maximumSize">
        <size>
         <width>300</width>
@@ -32,12 +64,12 @@
       <property name="focusPolicy">
        <enum>Qt::NoFocus</enum>
       </property>
-      <property name="contextMenuPolicy">
-       <enum>Qt::ActionsContextMenu</enum>
+      <property name="text">
+       <string>Add label</string>
       </property>
      </widget>
     </item>
-    <item row="2" column="0">
+    <item row="3" column="0">
      <widget class="ComputeBtn" name="_computeBtn">
       <property name="maximumSize">
        <size>
@@ -70,41 +102,6 @@
      </widget>
     </item>
     <item row="5" column="0">
-     <widget class="MiniMap" name="_minimap">
-      <property name="minimumSize">
-       <size>
-        <width>300</width>
-        <height>300</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>300</width>
-        <height>300</height>
-       </size>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="AddLabelBtn" name="_addLabelBtn">
-      <property name="maximumSize">
-       <size>
-        <width>300</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="focusPolicy">
-       <enum>Qt::NoFocus</enum>
-      </property>
-      <property name="text">
-       <string>Add label</string>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="0">
      <widget class="QTableView" name="_properties">
       <property name="maximumSize">
        <size>
@@ -117,16 +114,32 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="1" rowspan="6">
-     <widget class="FullImage" name="_image">
-      <property name="minimumSize">
+    <item row="4" column="0">
+     <widget class="Tree" name="_tree">
+      <property name="maximumSize">
        <size>
-        <width>600</width>
-        <height>600</height>
+        <width>300</width>
+        <height>16777215</height>
        </size>
       </property>
+      <property name="focusPolicy">
+       <enum>Qt::NoFocus</enum>
+      </property>
+      <property name="contextMenuPolicy">
+       <enum>Qt::ActionsContextMenu</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="AutoComputeBtn" name="_autoComputeBtn">
+      <property name="focusPolicy">
+       <enum>Qt::NoFocus</enum>
+      </property>
       <property name="text">
-       <string/>
+       <string>Activate auto compute</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -157,8 +170,15 @@
     <addaction name="_actionDecisionTree"/>
     <addaction name="_actionNeuralNetwork"/>
    </widget>
+   <widget class="QMenu" name="menuWeblinks">
+    <property name="title">
+     <string>Weblinks</string>
+    </property>
+    <addaction name="_actionSiliconpr0n"/>
+   </widget>
    <addaction name="menuInfo"/>
    <addaction name="menuComputation_method"/>
+   <addaction name="menuWeblinks"/>
   </widget>
   <action name="_actionSaveModel">
    <property name="text">
@@ -268,8 +288,47 @@
     <string>Remove X rows on top</string>
    </property>
   </action>
+  <action name="_actionSiliconpr0n">
+   <property name="text">
+    <string>https://siliconpr0n.org/</string>
+   </property>
+  </action>
+  <action name="_actionGridAddXColumnsLeft">
+   <property name="text">
+    <string>Add X columns to left</string>
+   </property>
+  </action>
+  <action name="_actionGridAddXColumnsRight">
+   <property name="text">
+    <string>Add X columns to right</string>
+   </property>
+   <property name="toolTip">
+    <string>Add X columns to right</string>
+   </property>
+  </action>
+  <action name="_actionGridRemoveXColumnsLeft">
+   <property name="text">
+    <string>Remove X columns on left</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove X columns on left</string>
+   </property>
+  </action>
+  <action name="_actionGridRemoveXColumnsRight">
+   <property name="text">
+    <string>Remove X columns on right</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove X columns on right</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>AutoComputeBtn</class>
+   <extends>QPushButton</extends>
+   <header>silicon_analyser.helper.autocomputebtn</header>
+  </customwidget>
   <customwidget>
    <class>ComputeBtn</class>
    <extends>QPushButton</extends>

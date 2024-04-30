@@ -1,8 +1,10 @@
+import logging
+logger = logging.getLogger(__name__)
+
 import typing
 from PyQt5.QtWidgets import QTableView
 from PyQt5.QtCore import QItemSelection, QModelIndex, Qt, QAbstractItemModel
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from silicon_analyser.savefiles import saveGrids
 from silicon_analyser.grid import Grid
 from silicon_analyser.treeitem import TreeItem
 from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
@@ -14,7 +16,7 @@ class PropertiesUtil:
         properties.model().dataChanged.connect(self.dataChanged)
     
     def dataChanged(self,*args,**kwargs):
-        print("dataChanged")
+        logger.info("dataChanged")
         valueCol: QModelIndex = args[0]
         if valueCol.column() != 1:
             return
@@ -23,7 +25,7 @@ class PropertiesUtil:
         nameCol = model.item(row,0)
         name = nameCol.data(Qt.ItemDataRole.DisplayRole)
         value = valueCol.data(Qt.ItemDataRole.DisplayRole)
-        print(f"{name}: {value}")
+        logger.info(f"{name}: {value}")
         grid: Grid = self._myWindow.getTree().getSelectedGrid()
         if(name == "cols"):
             grid.cols = int(value)
@@ -46,7 +48,7 @@ class PropertiesUtil:
         if(name == "shearY"):
             grid.shearY = float(value)
         self._myWindow.getImage().drawImage()
-        saveGrids(self._myWindow.getImage().getGrids())
+        self._myWindow.getSaving().triggerSaveGrids()
     
     def reloadPropertyWindow(self,selection: QItemSelection):
         table: QTableView = self._properties

@@ -16,7 +16,7 @@ class ComputeStatsDlg(QDialog):
     _val_accuracy: typing.Any
     _lblStatus: QLabel
     _btnStop: QPushButton
-    request_graph_update = pyqtSignal([dict,int])
+    request_graph_update:pyqtSignal = pyqtSignal([dict,int])
     
     def __init__(self):
         super().__init__()

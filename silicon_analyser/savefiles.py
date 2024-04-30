@@ -1,6 +1,9 @@
+import logging
+logger = logging.getLogger(__name__)
+
 import json
 from json import JSONDecoder, JSONEncoder
-
+from PyQt5.QtCore import pyqtSignal, QObject, QSemaphore
 from silicon_analyser.grid import Grid
 from silicon_analyser.rect import Rect
 
@@ -44,36 +47,60 @@ class MyJSONEncoder(JSONEncoder):
         def default(self, o):
             return o.__dict__
 
-def loadRects() -> dict[str, Rect]:
-    with open(SAVE_RECTS,"r") as f:
-        return json.load(f)
-
-def loadGrids() -> dict[str, Grid]:
-    with open(SAVE_GRIDS,"r") as f:
-        return json.load(f, cls=JSONGridDecoder)
+class Saving(QObject):
+    onSaving = pyqtSignal()
     
-def triggerSaveRects():
-    global doSaveRects
-    print("triggerSaveRects")
-    doSaveRects = True
+    def __init__(self, semaphore: QSemaphore):
+        super().__init__()
+        self.semaphore = semaphore
 
-def triggerSaveGrids():
-    global doSaveGrids
-    print("triggerSaveGrids")
-    doSaveGrids = True
+    def loadRects(self) -> dict[str, Rect]:
+        with open(SAVE_RECTS,"r") as f:
+            return json.load(f)
 
-def saveRects(rects):
-    global doSaveRects
-    print("saveRects")
-    if doSaveRects:
-        with open(SAVE_RECTS,"w") as f:
-            json.dump(rects, f, cls = MyJSONEncoder)
-        doSaveRects = False
+    def loadGrids(self) -> dict[str, Grid]:
+        with open(SAVE_GRIDS,"r") as f:
+            return json.load(f, cls=JSONGridDecoder)
+        
+    def triggerSaveRects(self):
+        global doSaveRects
+        logger.info("triggerSaveRects")
+        doSaveRects = True
 
-def saveGrids(grids):
-    global doSaveGrids
-    print("saveGrids")
-    if doSaveGrids:
-        with open(SAVE_GRIDS,"w") as f:
-            json.dump(grids, f, cls = MyJSONEncoder)
-        doSaveGrids = False
+    def triggerSaveGrids(self):
+        global doSaveGrids
+        logger.info("triggerSaveGrids")
+        doSaveGrids = True
+
+    def saveRects(self,rects):
+        global doSaveRects
+        if doSaveRects:
+            logger.info("acquire semaphore")
+            self.semaphore.acquire()
+            logger.info("semaphore acquired")
+            try:
+                logger.info("saveRects")
+                with open(SAVE_RECTS,"w") as f:
+                    json.dump(rects, f, cls = MyJSONEncoder)
+                doSaveRects = False
+            finally:
+                logger.info("release semaphore")
+                self.semaphore.release()
+                logger.info("semaphore released")
+
+    def saveGrids(self,grids):
+        global doSaveGrids
+        if doSaveGrids:
+            self.onSaving.emit()
+            logger.info("acquire semaphore")
+            self.semaphore.acquire()
+            logger.info("semaphore acquired")
+            try:
+                logger.info("saveGrids")
+                with open(SAVE_GRIDS,"w") as f:
+                    json.dump(grids, f, cls = MyJSONEncoder)
+                doSaveGrids = False
+            finally:
+                logger.info("release semaphore")
+                self.semaphore.release()
+                logger.info("semaphore released")

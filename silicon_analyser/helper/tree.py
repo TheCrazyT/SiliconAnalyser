@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from PIL import Image
 import typing
 import numpy as np
@@ -20,6 +23,10 @@ class Tree(AbstractTreeHelper):
     _actionGridAddXRowsTop: QAction
     _actionGridRemoveXRowsBottom: QAction
     _actionGridRemoveXRowsTop: QAction
+    _actionGridAddXColumnsLeft: QAction
+    _actionGridAddXColumnsRight: QAction
+    _actionGridRemoveXColumnsLeft: QAction
+    _actionGridRemoveXColumnsRight: QAction
     _actionSaveModel: QAction
     _actionLoadModel: QAction
     _actionRemoveGrid: QAction
@@ -47,10 +54,18 @@ class Tree(AbstractTreeHelper):
         self._actionGridAddXRowsBottom = self._myWindow._actionGridAddXRowsBottom
         self._actionGridRemoveXRowsTop = self._myWindow._actionGridRemoveXRowsTop
         self._actionGridRemoveXRowsBottom = self._myWindow._actionGridRemoveXRowsBottom
+        self._actionGridAddXColumnsLeft = self._myWindow._actionGridAddXColumnsLeft
+        self._actionGridAddXColumnsRight = self._myWindow._actionGridAddXColumnsRight
+        self._actionGridRemoveXColumnsLeft = self._myWindow._actionGridRemoveXColumnsLeft
+        self._actionGridRemoveXColumnsRight = self._myWindow._actionGridRemoveXColumnsRight
         self.addAction(self._actionGridAddXRowsTop)
         self.addAction(self._actionGridAddXRowsBottom)
         self.addAction(self._actionGridRemoveXRowsTop)
         self.addAction(self._actionGridRemoveXRowsBottom)
+        self.addAction(self._actionGridAddXColumnsLeft)
+        self.addAction(self._actionGridAddXColumnsRight)
+        self.addAction(self._actionGridRemoveXColumnsLeft)
+        self.addAction(self._actionGridRemoveXColumnsRight)
         self.addAction(self._actionSaveModel)
         self.addAction(self._actionLoadModel)
         self.addAction(self._actionRemoveGrid)
@@ -62,6 +77,10 @@ class Tree(AbstractTreeHelper):
         self._actionGridAddXRowsBottom.triggered.connect(self.addBottomRows)
         self._actionGridRemoveXRowsTop.triggered.connect(self.removeTopRows)
         self._actionGridRemoveXRowsBottom.triggered.connect(self.removeBottomRows)
+        self._actionGridAddXColumnsLeft.triggered.connect(self.addLeftColumns)
+        self._actionGridAddXColumnsRight.triggered.connect(self.addRightColumns)
+        self._actionGridRemoveXColumnsLeft.triggered.connect(self.removeLeftColumns)
+        self._actionGridRemoveXColumnsRight.triggered.connect(self.removeRightColumns)
         self._actionSaveModel.triggered.connect(self.saveModel)
         self._actionLoadModel.triggered.connect(self.loadModel)
         self._actionRemoveGrid.triggered.connect(self.removeGrid)
@@ -72,7 +91,7 @@ class Tree(AbstractTreeHelper):
         self._pixelImageDlg = PixelImageDlg()
     
     def exportCellsToImages(self, *args, **kwargs):
-        print("exportCellsToImages")
+        logger.info("exportCellsToImages")
         grid: Grid|None = self.getSelectedGrid()
         if grid is None:
             return
@@ -94,10 +113,10 @@ class Tree(AbstractTreeHelper):
                   imgArr[:,:,2] = arr[:,:,0]
                   imgToSave = Image.fromarray(imgArr)
                   imgToSave.save(f"{directoryPath}/{clean_label}_{x:03}_{y:03}.png","PNG")
-        print("exportCellsToImages done")
+        logger.info("exportCellsToImages done")
 
     def viewAsPixelimage(self, *args, **kwargs):
-        print("viewAsPixelimage")
+        logger.info("viewAsPixelimage")
         grid: Grid|None
         selectedType = self.selectedType()
         if selectedType == TreeItem.TYPE_GRID_ITEM:
@@ -112,7 +131,7 @@ class Tree(AbstractTreeHelper):
             self._pixelImageDlg.drawRects(grid.getRects(label))
     
     def saveAsCsv(self, *args, **kwargs):
-        print("saveAsCsv")
+        logger.info("saveAsCsv")
         dlg = QFileDialog()
         dlg.setLabelText(QFileDialog.DialogLabel.Accept, "Save")
         filenames = []
@@ -144,12 +163,14 @@ class Tree(AbstractTreeHelper):
                     f.write("\n")
     
     def saveModel(self, *args, **kwargs):
-        print("saveModel")
+        logger.info("saveModel")
         dlg = QFileDialog()
         dlg.setLabelText(QFileDialog.DialogLabel.Accept, "Save")
         filenames = []
         filenames = dlg.getSaveFileName(caption="Save trained model",filter="Trained model (*.h5)",initialFilter="Trained model (*.h5)")
         if(len(filenames) >= 1):
+            import os
+            os.environ["KERAS_BACKEND"] = "torch"
             from keras.models import Sequential
             grid = self.getSelectedGrid()
             if grid is not None:
@@ -162,10 +183,11 @@ class Tree(AbstractTreeHelper):
         aiGrid, aiTreeItem = self.addTreeItem(grid.name,TreeItem.TYPE_AI_GRID)
         for l in grid.getLabels():
             self.addTreeItem(l,TreeItem.TYPE_AI_GRID_ITEM,aiGrid,aiTreeItem)
+        self.expandAll()
         return aiGrid
     
     def loadModel(self, *args, **kwargs):
-        print("loadModel")
+        logger.info("loadModel")
         myWindow: AbstractMyWindow = self._myWindow
         dlg = QFileDialog()
         dlg.setFileMode(QFileDialog.ExistingFile)
@@ -174,6 +196,8 @@ class Tree(AbstractTreeHelper):
         if dlg.exec_():
             filenames = dlg.selectedFiles()
         if(len(filenames) == 1):
+            import os
+            os.environ["KERAS_BACKEND"] = "torch"
             from keras.models import load_model
             from silicon_analyser.helper.ai import appendFoundCellRects
             grid: Grid|None = self.getSelectedGrid()
@@ -186,7 +210,7 @@ class Tree(AbstractTreeHelper):
                 img.drawImage()
     
     def removeGrid(self, *args, **kwargs):
-        print("removeGrid")
+        logger.info("removeGrid")
         myWindow: AbstractMyWindow = self._myWindow
         grid: Grid|None = self.getSelectedGrid()
         if grid is None:
@@ -205,7 +229,7 @@ class Tree(AbstractTreeHelper):
             self.model().removeRow(index.row(),index.parent())
 
     def removeLabel(self, *args, **kwargs):
-        print("removeLabel")
+        logger.info("removeLabel")
         myWindow: AbstractMyWindow = self._myWindow
         label = self.selectedLabel()
         if(self.selectedType() == TreeItem.TYPE_GRID_ITEM):
@@ -218,8 +242,68 @@ class Tree(AbstractTreeHelper):
         myWindow.getImage().drawImage()
         self.removeSelectedRow()
 
+    def addLeftColumns(self, *args, **kwargs):
+        logger.info("addLeftColumns")
+        num,ok = QInputDialog.getInt(self,"How many columns to add?","enter a number",1)
+        if ok:
+            grid: Grid|None = self.getSelectedGrid()
+            if grid is None:
+                return
+            for _ in range(0,num):
+                grid.addLeftColumn()
+            grid.recalcCell()
+            myWindow: AbstractMyWindow = self._myWindow
+            myWindow.getImage().drawImage()
+            tree:Tree = self
+            myWindow.reloadPropertyWindow(tree.selectionModel().selection())
+
+    def addRightColumns(self, *args, **kwargs):
+        logger.info("addRightColumns")
+        num,ok = QInputDialog.getInt(self,"How many columns to add?","enter a number",1)
+        if ok:
+            grid: Grid|None = self.getSelectedGrid()
+            if grid is None:
+                return
+            for _ in range(0,num):
+                grid.addRightColumn()
+            grid.recalcCell()
+            myWindow: AbstractMyWindow = self._myWindow
+            myWindow.getImage().drawImage()
+            tree:Tree = self
+            myWindow.reloadPropertyWindow(tree.selectionModel().selection())
+                
+    def removeLeftColumns(self, *args, **kwargs):
+        logger.info("removeLeftColumns")
+        num,ok = QInputDialog.getInt(self,"How many columns to remove?","enter a number",1)
+        if ok:
+            grid: Grid|None = self.getSelectedGrid()
+            if grid is None:
+                return
+            for _ in range(0,num):
+                grid.removeLeftColumn()
+            grid.recalcCell()
+            myWindow: AbstractMyWindow = self._myWindow
+            myWindow.getImage().drawImage()
+            tree:Tree = self
+            myWindow.reloadPropertyWindow(tree.selectionModel().selection())
+
+    def removeRightColumns(self, *args, **kwargs):
+        logger.info("removeRightColumns")
+        num,ok = QInputDialog.getInt(self,"How many columns to remove?","enter a number",1)
+        if ok:
+            grid: Grid|None = self.getSelectedGrid()
+            if grid is None:
+                return
+            for _ in range(0,num):
+                grid.removeRightColumn()
+            grid.recalcCell()
+            myWindow: AbstractMyWindow = self._myWindow
+            myWindow.getImage().drawImage()
+            tree:Tree = self
+            myWindow.reloadPropertyWindow(tree.selectionModel().selection())
+
     def addTopRows(self, *args, **kwargs):
-        print("addTopRows")
+        logger.info("addTopRows")
         num,ok = QInputDialog.getInt(self,"How many rows to add?","enter a number",1)
         if ok:
             grid: Grid|None = self.getSelectedGrid()
@@ -234,7 +318,7 @@ class Tree(AbstractTreeHelper):
             myWindow.reloadPropertyWindow(tree.selectionModel().selection())
 
     def addBottomRows(self, *args, **kwargs):
-        print("addBottomRows")
+        logger.info("addBottomRows")
         num,ok = QInputDialog.getInt(self,"How many rows to add?","enter a number",1)
         if ok:
             grid: Grid|None = self.getSelectedGrid()
@@ -249,8 +333,8 @@ class Tree(AbstractTreeHelper):
             myWindow.reloadPropertyWindow(tree.selectionModel().selection())
 
     def removeTopRows(self, *args, **kwargs):
-        print("addTopRows")
-        num,ok = QInputDialog.getInt(self,"How many rows to add?","enter a number",1)
+        logger.info("removeTopRows")
+        num,ok = QInputDialog.getInt(self,"How many rows to remove?","enter a number",1)
         if ok:
             grid: Grid|None = self.getSelectedGrid()
             if grid is None:
@@ -264,8 +348,8 @@ class Tree(AbstractTreeHelper):
             myWindow.reloadPropertyWindow(tree.selectionModel().selection())
 
     def removeBottomRows(self, *args, **kwargs):
-        print("addBottomRows")
-        num,ok = QInputDialog.getInt(self,"How many rows to add?","enter a number",1)
+        logger.info("removeBottomRows")
+        num,ok = QInputDialog.getInt(self,"How many rows to remove?","enter a number",1)
         if ok:
             grid: Grid|None = self.getSelectedGrid()
             if grid is None:
@@ -279,7 +363,7 @@ class Tree(AbstractTreeHelper):
             myWindow.reloadPropertyWindow(tree.selectionModel().selection())
         
     def treeSelectionChanged(self, selection: QItemSelection):
-        print("treeSelectionChanged")
+        logger.info("treeSelectionChanged")
         myWindow: AbstractMyWindow = self._myWindow
         myWindow.reloadPropertyWindow(selection)
         tree = self
@@ -287,6 +371,12 @@ class Tree(AbstractTreeHelper):
         if((selectedType == TreeItem.TYPE_GRID_ITEM) or (selectedType == TreeItem.TYPE_GRID)):
             self._actionGridAddXRowsTop.setVisible(True)
             self._actionGridAddXRowsBottom.setVisible(True)
+            self._actionGridAddXColumnsLeft.setVisible(True)
+            self._actionGridAddXColumnsRight.setVisible(True)
+            self._actionGridRemoveXRowsTop.setVisible(True)
+            self._actionGridRemoveXRowsBottom.setVisible(True)
+            self._actionGridRemoveXColumnsLeft.setVisible(True)
+            self._actionGridRemoveXColumnsRight.setVisible(True)
             grid: Grid|None = self.getSelectedGrid()
             if grid is None:
                 return
@@ -296,6 +386,12 @@ class Tree(AbstractTreeHelper):
         else:
             self._actionGridAddXRowsTop.setVisible(False)
             self._actionGridAddXRowsBottom.setVisible(False)
+            self._actionGridAddXColumnsLeft.setVisible(False)
+            self._actionGridAddXColumnsRight.setVisible(False)
+            self._actionGridRemoveXRowsTop.setVisible(False)
+            self._actionGridRemoveXRowsBottom.setVisible(False)
+            self._actionGridRemoveXColumnsLeft.setVisible(False)
+            self._actionGridRemoveXColumnsRight.setVisible(False)
             self._actionSaveModel.setVisible(False)
             self._actionLoadModel.setVisible(False)
         if(selectedType == TreeItem.TYPE_GRID):
@@ -388,11 +484,6 @@ class Tree(AbstractTreeHelper):
             treeItem: QStandardItem = parent_item
         tree: Tree = self
         treeItem.appendRow(item)
-        tree.expandAll()
-        selModel = tree.selectionModel()
-        tree.clearSelection()
-        model: QStandardItemModel = typing.cast(QStandardItemModel, tree.model())
-        selModel.select(model.indexFromItem(item), QItemSelectionModel.SelectionFlag.Select)
         item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable |
                         QtCore.Qt.ItemFlag.ItemIsEnabled |
                         QtCore.Qt.ItemFlag.ItemIsSelectable)
@@ -440,12 +531,25 @@ class Tree(AbstractTreeHelper):
         return None if type != TreeItem.TYPE_GRID else selectedItem.data(TreeItem.OBJECT)
 
     def getSelectedAIGrid(self):
+        myWindow: AbstractMyWindow = self._myWindow
         selectedItem = self.getSelectedItem()
         if selectedItem is None:
             return
         type = selectedItem.data(TreeItem.TYPE)
         if type == TreeItem.TYPE_AI_GRID_ITEM:
             return selectedItem.parent().data(TreeItem.OBJECT)
+        if type == TreeItem.TYPE_GRID_ITEM:
+            gridName = selectedItem.parent().data(TreeItem.TEXT)
+            aiItem: QStandardItem = myWindow.getAIItem()
+            for r in range(0,aiItem.rowCount()):
+                if aiItem.child(r).data(TreeItem.TEXT) == gridName:
+                    return aiItem.child(r).data(TreeItem.OBJECT)
+        if type == TreeItem.TYPE_GRID:
+            gridName = selectedItem.data(TreeItem.TEXT)
+            aiItem: QStandardItem = myWindow.getAIItem()
+            for r in range(0,aiItem.rowCount()):
+                if aiItem.child(r).data(TreeItem.TEXT) == gridName:
+                    return aiItem.child(r).data(TreeItem.OBJECT)
         return None if type != TreeItem.TYPE_AI_GRID else selectedItem.data(TreeItem.OBJECT)
     
     def isItemSelected(self, rectLabel, gridName, gridItemType) -> bool:
@@ -496,7 +600,6 @@ class Tree(AbstractTreeHelper):
             img.activateAIGridRectGroup(grid,text)
         else:
             img.deactivateAIGridRectGroup(grid,text)
-        img.drawImage()
         
     def gridRectGroupChecked(self, treeItem: TreeItem, checked, text):
         myWindow: AbstractMyWindow = self._myWindow

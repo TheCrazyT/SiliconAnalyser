@@ -10,7 +10,16 @@ Install from pip:
 
 # Information
 
-Code will use your graphic card for acceleration.
+## Side note
+Bad project name decisions might lead people to this project.
+
+Maybe you are looking for [SiliconAnalysis](https://github.com/SiliconAnalysis/) instead?
+
+I'm sorry for that but I can't figure out any new project name (yet).
+
+## Acceleration
+
+The code will use your graphic card for acceleration.
 (but only if correct pytorch is installed, see "Additional info" below)
 
 Frameworks/Libraries used:
@@ -49,6 +58,14 @@ Frameworks/Libraries used:
 
 * you might need to install cuda-specific [PyTorch](https://pytorch.org/get-started/previous-versions/#linux-and-windows-4) for accelerated computing
     * check your graphic driver version for compatible cuda version!
+* Computation (currently) only happens based on active/visible grid cells (don't be fooled by accuracy of 1 just because you have only 1 label active - just activate all and use compute)
+
+## Command line
+
+For automatically opening a file, you can pass the filepath as a filename.
+For example:
+  silicon-analyser c:\my_files\image.png
+But keep in mind, that the program currently needs to create files in its current working directory (grid.json, rect.json).
 
 # Keys
 
@@ -57,14 +74,19 @@ Frameworks/Libraries used:
 * Scroll-wheel to zoom out
 * Click on minimap to get directly to a position
 * Right click on tree-items (left navigation menu) for additional options
+* Hold down middle mouse button, to move across the screen
+  * (behaviour might change in future, currently it does not behave as expected)
 
 ![image](https://raw.githubusercontent.com/TheCrazyT/SiliconAnalyser/main/docs/small_tutorial.gif)
 
 # TODO
 
+* undo option
+* maybe use a real db in background
+* some method to autofit grid
+* performance improvements
+* option for compute to continue from last training (currently starts fresh training)
 * show loading screen on start (pytorch with cuda support takes a bit to load)
-* option to calculate/classify by decision tree
-* auto-compute to calculate in background while you are selecting new cells for your labels
 * ai-model configuration
 * project management (project-file/-folder)
 * possibility to rotate grid

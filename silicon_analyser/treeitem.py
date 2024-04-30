@@ -44,4 +44,8 @@ class TreeItem(QStandardItem):
                     self.onChecked(self,True,self._text)
         return super().setData(value, role)
     
+    def uncheck(self):
+        self.setCheckState(Qt.CheckState.Unchecked)
+
+    
     

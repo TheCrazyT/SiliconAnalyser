@@ -1,11 +1,13 @@
-from functools import lru_cache
-from PyQt5.QtCore import Qt, QRect, QSize, QTimer
+import inspect
+import logging
+logger = logging.getLogger(__name__)
+
+from PyQt5.QtCore import Qt, QRect, QSize, QTimer, pyqtSignal
 from PyQt5.QtWidgets import QLabel, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap, QColor, QMouseEvent, QPainter, QPen, QBrush
 import typing
 import numpy as np
 from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
-from silicon_analyser.savefiles import triggerSaveGrids, triggerSaveRects, saveGrids, saveRects
 from silicon_analyser.grid import Grid
 from silicon_analyser.rect import Rect
 from silicon_analyser.treeitem import TreeItem
@@ -24,6 +26,7 @@ class FullImage(QLabel):
     _moveDeltaY: int
     _moveTimer: QTimer
     _saveTimer: QTimer
+    onRectChanged = pyqtSignal()
     
     def __init__(self, parent):
         QLabel.__init__(self, parent)
@@ -52,8 +55,8 @@ class FullImage(QLabel):
         self._saveTimer.start()
     
     def doSave(self):
-        saveRects(self._rects)
-        saveGrids(self._grids)
+        self._myWindow.getSaving().saveRects(self._rects)
+        self._myWindow.getSaving().saveGrids(self._grids)
         
     def moveUpdate(self):
         posX, posY = self._myWindow.getPos()
@@ -100,10 +103,12 @@ class FullImage(QLabel):
                     ry = grid.y - posY
                     if button == Qt.MouseButton.LeftButton:
                         grid.setRect(int((tevx - rx)/(grid.getCellWidth())),int((tevy - ry)/(grid.getCellHeight())), self._myWindow.getTree().selectedLabel())
+                        self.onRectChanged.emit()
                     if button == Qt.MouseButton.RightButton:
                         grid.unsetRect(int((tevx - rx)/(grid.getCellWidth())),int((tevy - ry)/(grid.getCellHeight())), self._myWindow.getTree().selectedLabel())
+                        self.onRectChanged.emit()
                     if self._myWindow.autosave:
-                        triggerSaveGrids()
+                        self._myWindow.getSaving().triggerSaveGrids()
                     
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.MiddleButton:
@@ -117,7 +122,7 @@ class FullImage(QLabel):
             self.markGridItem(event.x(),event.y(),event.button())
             return
         if event.button() == Qt.MouseButton.LeftButton:
-            print("FullImage: mousePressEvent",self._drawRectStart)
+            logger.info(f"FullImage: mousePressEvent:{self._drawRectStart}")
             if tree.selectedType() is not None:
                 if not self._drawRectStart:
                     self._drawRectStart = True
@@ -158,7 +163,7 @@ class FullImage(QLabel):
             
         if event.button() == Qt.MouseButton.LeftButton:
             self._drawRectStart = False
-            print("mouseReleaseEvent",self._rectStartX,self._rectStartY,self._rectEndX,self._rectEndY)
+            logger.info(f"mouseReleaseEvent:{self._rectStartX},{self._rectStartY},{self._rectEndX},{self._rectEndY}")
             selectedKey: str = self._myWindow.getTree().selectedLabel()
             if selectedKey is not None:
                 x = self._rectStartX
@@ -176,13 +181,13 @@ class FullImage(QLabel):
                     grid.height = ey-y
                     grid.recalcCell()
                     self._grids[selectedKey] = grid
-                    print(f"grid resized: {id(grid)}")
+                    logger.info(f"grid resized: {id(grid)}")
                     self._myWindow.reloadProperyWindowByGrid(grid)
                     if self._myWindow.autosave:
-                        triggerSaveGrids()
+                        self._myWindow.getSaving().triggerSaveGrids()
                 self.drawImage()
         if event.button() == Qt.MouseButton.RightButton:
-            print("right click")
+            logger.info("right click")
             self.removeRectAt(event.x(),event.y())
     
     def removeRectGroup(self, label):
@@ -219,7 +224,7 @@ class FullImage(QLabel):
                     if x < evx and y < evy and ex > evx and ey > evy:
                         toRemove.append(i)
             for i in  sorted(toRemove, reverse=True):
-                print(f"remove {i}")
+                logger.info(f"remove {i}")
                 del self._rects[k][i]
         
         for k in self._aiRects.keys():
@@ -240,19 +245,19 @@ class FullImage(QLabel):
                     if x<evx and y<evy and ex>evx and ey>evy:
                         toRemove.append(i)
             for i in sorted(toRemove, reverse=True):
-                print(f"remove {i}")
+                logger.info(f"remove {i}")
                 self._aiIgnoreRects.append(self._aiRects[k][i])
                 del self._aiRects[k][i]
                 
         self.drawImage()
         if  self._myWindow.autosave:
-            triggerSaveRects()
-            triggerSaveGrids()
+            self._myWindow.getSaving().triggerSaveRects()
+            self._myWindow.getSaving().triggerSaveGrids()
 
     def appendRect(self,key,x,y,ex,ey):
         self._appendRect(key, self._rects, x, y, ex, ey)
         if self._myWindow.autosave:
-            triggerSaveRects()
+            self._myWindow.getSaving().triggerSaveRects()
 
     def _appendRect(self, key, rects, x, y, ex, ey, ignorePos = False):
         if ignorePos:
@@ -305,10 +310,10 @@ class FullImage(QLabel):
         return int(v*self._myWindow.getScale())
     
     def clearAIRects(self):
-        self._aiGridsActive = {}
-        self._aiGrids = {}
-        self._aiRects = {}
-        self._aiRectActive = {}
+        self._aiGridsActive.clear()
+        self._aiGrids.clear()
+        self._aiRects.clear()
+        self._aiRectActive.clear()
     
     # TODO: maybe deprecated, not shure yet
     def drawRectOnScaledImg(self, scaledImg: QPixmap):
@@ -437,6 +442,10 @@ class FullImage(QLabel):
                         qp.drawRect(x,y,w,h)
 
     def drawImage(self):
+        idx = 1
+        stack = inspect.stack()
+        logger.info(f"drawImage {stack[idx].filename},{stack[idx].lineno}")
+        #logger.info(f"drawImage")
         posX, posY = self._myWindow.getPos()
         scale = self._myWindow.getScale()
         rect = QRect(int(posX), int(posY), int(self.width()/scale), int(self.height()/scale))
@@ -460,12 +469,11 @@ class FullImage(QLabel):
         self._grids[text] = grid
         self._myWindow.reloadProperyWindowByGrid(grid)
         if self._myWindow.autosave:
-            triggerSaveGrids()
+            self._myWindow.getSaving().triggerSaveGrids()
         return self._grids[text]
     
     def activateAIGrid(self, text):
         self._aiGridsActive[text] = True
-        self.drawImage()
 
     def activateGrid(self, text: str):
         self._gridsActive[text] = True

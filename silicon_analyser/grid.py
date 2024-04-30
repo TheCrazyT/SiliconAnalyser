@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 from functools import lru_cache
 
 
@@ -17,7 +19,7 @@ class Grid:
         self._rects = {}
         self._rectsActive = {}
         self.recalcCell()
-        print(f"init grid:{id(self)}")
+        logger.info(f"init grid:{id(self)}")
     
     def recalcCell(self):
         self._cellWidth = self.width / self.cols
@@ -76,9 +78,52 @@ class Grid:
         self.rectLabel.cache_clear()
         self._rectsActive[text] = False
         
+    def addRightColumn(self):
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
+        self.width += int(self.getCellWidth())
+        self.cols += 1
+
+    def addLeftColumn(self):
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
+        self.x -= int(self.getCellWidth())
+        self.width += int(self.getCellWidth())
+        self.cols += 1
+        for label in self._rects:
+            for i in range(0,len(self._rects[label])):
+                col, row = self._rects[label][i]
+                self._rects[label][i] = [col+1, row]
+
+    def removeRightColumn(self):
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
+        self.width -= int(self.getCellWidth())
+        self.cols -= 1
+
+    def removeLeftColumn(self):
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
+        for label in self._rects:
+            delEntries = []
+            for i in range(0,len(self._rects[label])):
+                col, row = self._rects[label][i]
+                if col - 1 < 0:
+                    delEntries.append(i)
+                else:
+                    self._rects[label][i] = [col-1, row]
+            delEntries = sorted(delEntries, reverse=True)
+            for i in delEntries:
+                del self._rects[label][i]
+        self.x += int(self.getCellWidth())
+        self.width -= int(self.getCellWidth())
+        self.cols -= 1
+        
     def addTopRow(self):
-        self.y -= int(self.height/self.rows)
-        self.height += int(self.height/self.rows)
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
+        self.y -= int(self.getCellHeight())
+        self.height += int(self.getCellHeight())
         self.rows += 1
         for label in self._rects:
             for i in range(0,len(self._rects[label])):
@@ -86,10 +131,14 @@ class Grid:
                 self._rects[label][i] = [col, row+1]
 
     def addBottomRow(self):
-        self.height += int(self.height/self.rows)
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
+        self.height += int(self.getCellHeight())
         self.rows += 1
         
     def removeTopRow(self):
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
         for label in self._rects:
             delEntries = []
             for i in range(0,len(self._rects[label])):
@@ -101,18 +150,20 @@ class Grid:
             delEntries = sorted(delEntries, reverse=True)
             for i in delEntries:
                 del self._rects[label][i]
-        self.y += int(self.height/self.rows)
-        self.height -= int(self.height/self.rows)
+        self.y += int(self.getCellHeight())
+        self.height -= int(self.getCellHeight())
         self.rows -= 1
 
     def removeBottomRow(self):
-        self.height -= int(self.height/self.rows)
+        self.isRectSet.cache_clear()
+        self.rectLabel.cache_clear()
+        self.height -= int(self.getCellHeight())
         self.rows -= 1
     
     def setRect(self, col, row, label):
         self.isRectSet.cache_clear()
         self.rectLabel.cache_clear()
-        #print(f"setRect {col} {row} {label}")
+        #logger.info(f"setRect {col} {row} {label}")
         r = [col, row]
         if label not in self._rects:
             self._rects[label] = []
@@ -124,7 +175,7 @@ class Grid:
     def unsetRect(self, col, row, label):
         self.isRectSet.cache_clear()
         self.rectLabel.cache_clear()
-        print(f"unsetRect {col} {row}")
+        logger.info(f"unsetRect {col} {row}")
         r = [col, row]
         if r in self._rects[label]:
             self._rects[label].remove(r)
@@ -153,9 +204,13 @@ class Grid:
     def getRects(self, key: str) -> list[list[int]]:
         return self._rects[key]
     
+    def getRectLabelsActive(self) -> dict[str,bool]:
+        return self._rectsActive
+    
 def getAllCellRects(grid: Grid):
     cellRects = []
     for cx in range(0,grid.cols):
         for cy in range(0,grid.rows):
             cellRects.append((cx,cy))
     return cellRects
+

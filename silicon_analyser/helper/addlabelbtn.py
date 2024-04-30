@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from PyQt5.QtWidgets import QInputDialog, QPushButton
 from PyQt5.QtGui import QMouseEvent
 from silicon_analyser.helper.abstract.abstractmywindow import AbstractMyWindow
@@ -11,7 +14,9 @@ class AddLabelBtn(QPushButton):
         print("AddLabelBtn: buttonClicked")
         text, ok = QInputDialog.getText(self, 'Label Input Dialog', 'Enter your label:')
         if ok:
-            self._myWindow.getTree().addTreeItem(text)
+            tree = self._myWindow.getTree()
+            tree.addTreeItem(text)
+            tree.expandAll()
             
     def initialize(self, myWindow: AbstractMyWindow):
         self._myWindow = myWindow
